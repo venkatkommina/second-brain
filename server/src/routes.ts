@@ -1,10 +1,13 @@
 import express from "express";
 import bcrypt from "bcrypt";
-import { z } from "zod";
 import { Content, Link, Tag, User } from "./db";
 import jwt from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
-import { JwtPayload } from "jsonwebtoken";
+import {
+  userValidation,
+  tagValidation,
+  contentValidation,
+} from "@venkat91/second-brain-common";
 
 import crypto from "crypto";
 
@@ -15,32 +18,6 @@ interface AuthenticatedRequest extends Request {
 const router = express.Router();
 
 router.use(express.json());
-
-const userValidation = z.object({
-  email: z.string().email(),
-  password: z
-    .string()
-    .min(8, { message: "Password should have minimum length of 8" })
-    .max(20, "Password is too long")
-    .regex(
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,20}$/,
-      {
-        message:
-          "Should Contain at least one uppercase letter, one lowecase letter, one number, one specail char. and have a minimum length of 8, maximum length of 20 characters.",
-      }
-    ),
-});
-
-const contentValidation = z.object({
-  link: z.string(),
-  type: z.string(),
-  title: z.string(),
-  tags: z.string().array(),
-});
-
-const tagValidation = z.object({
-  title: z.string(),
-});
 
 const authenticateToken = (
   req: AuthenticatedRequest,
