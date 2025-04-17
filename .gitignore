@@ -1,0 +1,48 @@
+# Node.js dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# dotenv environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# TypeScript build output
+dist/
+build/
+*.tsbuildinfo
+
+# Logs
+logs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# React frontend build output (if in /frontend or /client folder)
+frontend/node_modules/
+frontend/build/
+
+# Coverage directory (if you're using test coverage tools)
+coverage/
+
+# Cache
+.cache/
+.next/
+out/
+
+# Temp files
+tmp/
+temp/
+
+# Misc
+*.swp
