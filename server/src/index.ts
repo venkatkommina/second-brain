@@ -4,17 +4,15 @@ import router from "./routes";
 import { connectToDB } from "./db";
 
 const port = 5000;
-
 const app = express();
 
-// Enable CORS
+// Parse JSON bodies
+app.use(express.json());
+
 app.use(cors({
   origin: "http://localhost:5173", // allow Vite frontend
   credentials: true, // if you're using cookies or auth headers
 }));
-
-// Parse JSON bodies
-app.use(express.json());
 
 app.use("/api/v1", router);
 
