@@ -10,12 +10,18 @@ import {
 } from "@venkat91/second-brain-common";
 
 import crypto from "crypto";
+import cors from "cors";
 
 interface AuthenticatedRequest extends Request {
   email?: string;
 }
 
 const router = express.Router();
+
+router.use(cors({
+  origin: "http://localhost:5173", // allow Vite frontend
+  credentials: true, // if you're using cookies or auth headers
+}));
 
 router.use(express.json());
 

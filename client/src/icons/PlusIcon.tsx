@@ -1,25 +1,29 @@
+import { cn } from "../lib/utils";
+
 interface PlusIconProps {
-  size: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg";
+  className?: string;
 }
 
-export function PlusIcon(props: PlusIconProps) {
-  const sizeVariants = {
-    sm: "size-4",
-    md: "size-6",
-    lg: "size-8",
+export function PlusIcon({ size = "md", className }: PlusIconProps) {
+  const sizeClasses = {
+    sm: "h-4 w-4",
+    md: "h-5 w-5",
+    lg: "h-6 w-6",
   };
+
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       fill="none"
       viewBox="0 0 24 24"
-      stroke-width="1.5"
+      strokeWidth={1.5}
       stroke="currentColor"
-      className={sizeVariants[props.size]}
+      className={cn(sizeClasses[size], className)}
     >
       <path
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeLinecap="round"
+        strokeLinejoin="round"
         d="M12 4.5v15m7.5-7.5h-15"
       />
     </svg>
