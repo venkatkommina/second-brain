@@ -9,6 +9,7 @@ type User = {
 type AuthContextType = {
   user: User | null;
   token: string | null;
+  isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string) => Promise<void>;
   logout: () => void;
@@ -113,6 +114,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         user,
         token,
+        isAuthenticated: !!token,
         login,
         signup,
         logout,
