@@ -37,8 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // You can add an endpoint to verify the token and get user info
         // For now, we'll just assume the token is valid
         setUser({ email: "user@example.com", id: "1" }); // Replace with actual user data
-      } catch (err) {
-        console.error("Token verification failed", err);
+      } catch {
         logout();
       }
     };

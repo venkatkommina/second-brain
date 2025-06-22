@@ -46,3 +46,7 @@ temp/
 
 # Misc
 *.swp
+
+# Local documentation files (keep local only)
+complete_client.md
+fixes_summary.md

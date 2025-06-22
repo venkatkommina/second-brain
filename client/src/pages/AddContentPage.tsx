@@ -46,13 +46,10 @@ export function AddContentPage() {
   // Create tag mutation
   const createTagMutation = useMutation({
     mutationFn: async (title: string) => {
-      console.log("Creating tag:", title);
       const response = await api.post<Tag>("/tag", { title });
-      console.log("Tag creation response:", response.data);
       return response.data;
     },
     onSuccess: (newTag) => {
-      console.log("Tag created successfully:", newTag);
       setSelectedTags([...selectedTags, newTag._id]);
       setNewTagTitle("");
       // Invalidate and refetch tags
@@ -66,13 +63,10 @@ export function AddContentPage() {
   // Create content mutation
   const createContentMutation = useMutation({
     mutationFn: async (data: z.infer<typeof contentSchema>) => {
-      console.log("Sending content data to API:", data);
       const response = await api.post("/content", data);
-      console.log("Content creation response:", response.data);
       return response.data;
     },
-    onSuccess: (data) => {
-      console.log("Content created successfully:", data);
+    onSuccess: () => {
       // Invalidate content queries
       queryClient.invalidateQueries({ queryKey: ["content"] });
       navigate("/dashboard");
@@ -99,14 +93,6 @@ export function AddContentPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log("Form submission attempted:", {
-      title,
-      link,
-      type,
-      selectedTags,
-      formValid: title && link && type
-    });
-    
     try {
       const data = contentSchema.parse({
         title,
@@ -115,11 +101,9 @@ export function AddContentPage() {
         tags: selectedTags,
       });
       
-      console.log("Form validation passed, submitting:", data);
       createContentMutation.mutate(data);
       setErrors({});
     } catch (error) {
-      console.error("Form validation failed:", error);
       if (error instanceof z.ZodError) {
         const formattedErrors: Record<string, string> = {};
         error.errors.forEach((err) => {
