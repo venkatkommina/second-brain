@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import axios, { AxiosError } from "axios";
+import api from "../lib/axios";
+import { AxiosError } from "axios";
 
 type User = {
   email: string;
@@ -19,8 +20,6 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_URL = "http://localhost:5000/api/v1";
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(
@@ -28,15 +27,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Configure axios with token
-  useEffect(() => {
-    if (token) {
-      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-    } else {
-      delete axios.defaults.headers.common["Authorization"];
-    }
-  }, [token]);
 
   // Auto-login if token exists
   useEffect(() => {
@@ -61,7 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setError(null);
     
     try {
-      const response = await axios.post(`${API_URL}/signin`, {
+      const response = await api.post("/signin", {
         email,
         password,
       });
@@ -86,7 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setError(null);
     
     try {
-      await axios.post(`${API_URL}/signup`, {
+      await api.post("/signup", {
         email,
         password,
       });
@@ -106,7 +96,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem("token");
     setToken(null);
     setUser(null);
-    delete axios.defaults.headers.common["Authorization"];
   };
 
   return (

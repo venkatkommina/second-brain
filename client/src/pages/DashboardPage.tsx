@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import axios from "axios";
+import api from "../lib/axios";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
@@ -23,8 +23,6 @@ type Content = {
   userId: string;
 };
 
-const API_URL = "http://localhost:5000/api/v1";
-
 export function DashboardPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
@@ -34,7 +32,7 @@ export function DashboardPage() {
   const { data: content = [], isLoading: isLoadingContent } = useQuery({
     queryKey: ["content"],
     queryFn: async () => {
-      const response = await axios.get<Content[]>(`${API_URL}/content`);
+      const response = await api.get<Content[]>("/content");
       return response.data;
     },
   });
@@ -43,7 +41,7 @@ export function DashboardPage() {
   const { data: tags = [] } = useQuery({
     queryKey: ["tags"],
     queryFn: async () => {
-      const response = await axios.get<Tag[]>(`${API_URL}/tag`);
+      const response = await api.get<Tag[]>("/tag");
       return response.data;
     },
   });

@@ -19,7 +19,7 @@ interface AuthenticatedRequest extends Request {
 const router = express.Router();
 
 router.use(cors({
-  origin: "http://localhost:5173", // allow Vite frontend
+  origin: ["http://localhost:5173", "http://localhost:3000", "http://localhost:5174"], // allow Vite frontend and other common dev ports
   credentials: true, // if you're using cookies or auth headers
 }));
 
@@ -119,24 +119,40 @@ router.post("/signin", async (req, res): Promise<any> => {
   }
 });
 
-router.post("/tag", authenticateToken, async (req, res) => {
+router.post("/tag", authenticateToken, async (req: AuthenticatedRequest, res): Promise<any> => {
   try {
     const tag = req.body;
     const { success, error } = tagValidation.safeParse(tag);
     if (!success) {
-      res.send(411).json({ message: "Invalid input", error: error.errors[0] });
+      return res.status(411).json({ message: "Invalid input", error: error.errors[0] });
     }
 
-    const existingTag = await Tag.findOne({ title: tag.title });
-    if (existingTag) {
-      res.status(403).json({ message: "Tag already exists" });
+    const user = await User.findOne({ email: req.email });
+    if (!user) {
+      return res.status(403).json({ message: "User not found" });
     }
-    const newTag = new Tag(tag);
+
+    // Check if tag already exists for this user or as a global tag
+    const existingTag = await Tag.findOne({ 
+      title: tag.title,
+      $or: [
+        { userId: user._id }, // user's own tag
+        { isGlobal: true }    // global tag
+      ]
+    });
+    
+    if (existingTag) {
+      return res.status(403).json({ message: "Tag already exists" });
+    }
+    
+    const newTag = new Tag({
+      title: tag.title,
+      userId: user._id,
+      isGlobal: false
+    });
     await newTag.save();
 
-    res
-      .status(200)
-      .json({ message: "Tag created successfully", id: newTag._id });
+    return res.status(200).json(newTag);
   } catch (error: unknown) {
     if (error instanceof Error) {
       console.error(error.message);
@@ -145,9 +161,20 @@ router.post("/tag", authenticateToken, async (req, res) => {
   }
 });
 
-router.get("/tag", authenticateToken, async (req, res) => {
+router.get("/tag", authenticateToken, async (req: AuthenticatedRequest, res): Promise<any> => {
   try {
-    const tags = await Tag.find({});
+    const user = await User.findOne({ email: req.email });
+    if (!user) {
+      return res.status(403).json({ message: "User not found" });
+    }
+
+    // Get user's own tags and global tags
+    const tags = await Tag.find({
+      $or: [
+        { userId: user._id },  // user's own tags
+        {isGlobal: true}      // global tags (userId is null)
+      ]
+    });
 
     res.status(200).json(tags);
   } catch (error: unknown) {
@@ -155,7 +182,6 @@ router.get("/tag", authenticateToken, async (req, res) => {
       console.error(error.message);
     }
     res.status(500).json(error);
-    // Todo: how to make this content validation in try and console error rather than showing internal server error whenever there is schema validation at the mongoose level
   }
 });
 
@@ -197,7 +223,7 @@ router.get(
 
       const user = await User.findOne({ email });
 
-      const content = await Content.find({ userId: user?._id });
+      const content = await Content.find({ userId: user?._id }).populate('tags');
 
       res.status(200).json(content);
     } catch (error: unknown) {

@@ -20,8 +20,17 @@ const userSchema = new mongoose.Schema({
 });
 
 const tagSchema = new mongoose.Schema({
-  title: { type: String, required: true, unique: true },
+  title: { type: String, required: true },
+  userId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: "User",
+    required: false // null for global tags, specific userId for user tags
+  },
+  isGlobal: { type: Boolean, default: false }, // for predefined global tags
 });
+
+// Create a compound unique index to allow same tag title for different users
+tagSchema.index({ title: 1, userId: 1 }, { unique: true });
 
 const contentTypes = ["image", "video", "article", "audio"];
 

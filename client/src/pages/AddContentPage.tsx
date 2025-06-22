@@ -1,15 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import axios from "axios";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import api from "../lib/axios";
 import { z } from "zod";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { Badge } from "../components/ui/Badge";
 import { PlusIcon } from "@heroicons/react/24/outline";
-
-const API_URL = "http://localhost:5000/api/v1";
 
 // Types based on your backend models
 type Tag = {
@@ -28,6 +26,7 @@ const contentSchema = z.object({
 
 export function AddContentPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [title, setTitle] = useState("");
   const [link, setLink] = useState("");
   const [type, setType] = useState<ContentType>("article");
@@ -39,7 +38,7 @@ export function AddContentPage() {
   const { data: tags = [] } = useQuery({
     queryKey: ["tags"],
     queryFn: async () => {
-      const response = await axios.get<Tag[]>(`${API_URL}/tag`);
+      const response = await api.get<Tag[]>("/tag");
       return response.data;
     },
   });
@@ -47,23 +46,39 @@ export function AddContentPage() {
   // Create tag mutation
   const createTagMutation = useMutation({
     mutationFn: async (title: string) => {
-      const response = await axios.post<Tag>(`${API_URL}/tag`, { title });
+      console.log("Creating tag:", title);
+      const response = await api.post<Tag>("/tag", { title });
+      console.log("Tag creation response:", response.data);
       return response.data;
     },
     onSuccess: (newTag) => {
+      console.log("Tag created successfully:", newTag);
       setSelectedTags([...selectedTags, newTag._id]);
       setNewTagTitle("");
+      // Invalidate and refetch tags
+      queryClient.invalidateQueries({ queryKey: ["tags"] });
+    },
+    onError: (error) => {
+      console.error("Error creating tag:", error);
     },
   });
 
   // Create content mutation
   const createContentMutation = useMutation({
     mutationFn: async (data: z.infer<typeof contentSchema>) => {
-      const response = await axios.post(`${API_URL}/content`, data);
+      console.log("Sending content data to API:", data);
+      const response = await api.post("/content", data);
+      console.log("Content creation response:", response.data);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Content created successfully:", data);
+      // Invalidate content queries
+      queryClient.invalidateQueries({ queryKey: ["content"] });
       navigate("/dashboard");
+    },
+    onError: (error) => {
+      console.error("Error creating content:", error);
     },
   });
 
@@ -84,6 +99,14 @@ export function AddContentPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log("Form submission attempted:", {
+      title,
+      link,
+      type,
+      selectedTags,
+      formValid: title && link && type
+    });
+    
     try {
       const data = contentSchema.parse({
         title,
@@ -92,9 +115,11 @@ export function AddContentPage() {
         tags: selectedTags,
       });
       
+      console.log("Form validation passed, submitting:", data);
       createContentMutation.mutate(data);
       setErrors({});
     } catch (error) {
+      console.error("Form validation failed:", error);
       if (error instanceof z.ZodError) {
         const formattedErrors: Record<string, string> = {};
         error.errors.forEach((err) => {

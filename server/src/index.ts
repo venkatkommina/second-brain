@@ -3,14 +3,14 @@ import cors from "cors";
 import router from "./routes";
 import { connectToDB } from "./db";
 
-const port = 5000;
+const port = process.env.PORT || 3001;
 const app = express();
 
 // Parse JSON bodies
 app.use(express.json());
 
 app.use(cors({
-  origin: "http://localhost:5173", // allow Vite frontend
+  origin: ["http://localhost:5173", "http://localhost:3000", "http://localhost:5174"], // allow Vite frontend and other common dev ports
   credentials: true, // if you're using cookies or auth headers
 }));
 
