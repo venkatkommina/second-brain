@@ -178,35 +178,7 @@ second-brain/
 5. **Search and filter** your content on the dashboard
 6. **Share your brain** publicly using the share feature
 
-## Development
-
-### Running Tests
-
-```bash
-# Run backend tests (when available)
-cd server && npm test
-
-# Run frontend tests (when available)
-cd client && npm test
 ```
-
-### Building for Production
-
-```bash
-# Build the client
-cd client && npm run build
-
-# Build the server
-cd server && npm run build
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
 
 ## Future Roadmap
 
@@ -218,23 +190,11 @@ cd server && npm run build
 - **Knowledge Connections**: Discover relationships between different pieces of content
 - **Question Answering**: Ask questions about your saved content and get intelligent answers
 
-### 🚀 Additional Features
-
-- **Full-text search** across content and notes
-- **Import/Export** functionality
-- **Browser extension** for quick content saving
-- **Collaborative features** for team knowledge bases
-- **Advanced analytics** and insights
-- **Mobile app** for iOS and Android
-
 ## License
 
 This project is licensed under the MIT License.
 
-## Support
-
-If you have any questions or need help, please open an issue on GitHub or contact the maintainer.
-
 ---
 
 **Built with ❤️ by [Venkat](https://github.com/venkatkommina)**
+```
