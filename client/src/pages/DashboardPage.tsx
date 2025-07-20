@@ -2,9 +2,15 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import api from "../lib/axios";
 import { Link } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Badge } from "../components/ui/Badge";
+import { MarkdownViewer } from "../components/MarkdownViewer";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { truncateText } from "../lib/utils";
 
@@ -19,6 +25,7 @@ type Content = {
   link: string;
   type: "image" | "video" | "article" | "audio";
   title: string;
+  notes?: string; // Optional notes field
   tags: Tag[];
   userId: string;
 };
@@ -51,11 +58,11 @@ export function DashboardPage() {
     const matchesSearch = searchQuery
       ? item.title.toLowerCase().includes(searchQuery.toLowerCase())
       : true;
-    
+
     const matchesTag = selectedTag
       ? item.tags.some((tag) => tag._id === selectedTag)
       : true;
-    
+
     return matchesSearch && matchesTag;
   });
 
@@ -93,9 +100,9 @@ export function DashboardPage() {
             type="text"
             placeholder="Search content..."
             className="w-full px-4 py-2 rounded-md border"
-            style={{ 
+            style={{
               borderColor: "hsl(var(--input))",
-              backgroundColor: "hsl(var(--background))"
+              backgroundColor: "hsl(var(--background))",
             }}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -147,17 +154,31 @@ export function DashboardPage() {
         </div>
       ) : filteredContent.length === 0 ? (
         <div className="text-center py-12">
-          <p style={{ color: "hsl(var(--muted-foreground))" }}>No content found</p>
+          <p style={{ color: "hsl(var(--muted-foreground))" }}>
+            No content found
+          </p>
           <Link to="/content/new" className="mt-4 inline-block">
             <Button>Add your first content</Button>
           </Link>
         </div>
       ) : (
-        <div className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"}>
+        <div
+          className={
+            viewMode === "grid"
+              ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+              : "space-y-4"
+          }
+        >
           {filteredContent.map((item) => (
-            <Card key={item._id} className={viewMode === "list" ? "flex overflow-hidden" : ""}>
+            <Card
+              key={item._id}
+              className={viewMode === "list" ? "flex overflow-hidden" : ""}
+            >
               {viewMode === "list" && (
-                <div className="flex items-center justify-center p-6 text-4xl" style={{ backgroundColor: "hsl(var(--muted))" }}>
+                <div
+                  className="flex items-center justify-center p-6 text-4xl"
+                  style={{ backgroundColor: "hsl(var(--muted))" }}
+                >
                   {getContentTypeIcon(item.type)}
                 </div>
               )}
@@ -165,7 +186,9 @@ export function DashboardPage() {
                 <CardHeader>
                   <div className="flex items-center gap-2">
                     {viewMode === "grid" && (
-                      <span className="text-2xl">{getContentTypeIcon(item.type)}</span>
+                      <span className="text-2xl">
+                        {getContentTypeIcon(item.type)}
+                      </span>
                     )}
                     <CardTitle className="truncate">{item.title}</CardTitle>
                   </div>
@@ -178,6 +201,17 @@ export function DashboardPage() {
                       </Badge>
                     ))}
                   </div>
+                  {item.notes && (
+                    <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">
+                        Notes:
+                      </h4>
+                      <MarkdownViewer
+                        content={item.notes}
+                        className="text-gray-600"
+                      />
+                    </div>
+                  )}
                   <a
                     href={item.link}
                     target="_blank"
@@ -195,4 +229,4 @@ export function DashboardPage() {
       )}
     </div>
   );
-} 
+}

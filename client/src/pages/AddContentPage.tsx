@@ -3,10 +3,16 @@ import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "../lib/axios";
 import { z } from "zod";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { Badge } from "../components/ui/Badge";
+import { MarkdownEditor } from "../components/MarkdownEditor";
 import { PlusIcon } from "@heroicons/react/24/outline";
 
 // Types based on your backend models
@@ -21,6 +27,7 @@ const contentSchema = z.object({
   title: z.string().min(1, "Title is required"),
   link: z.string().url("Please enter a valid URL"),
   type: z.enum(["article", "video", "image", "audio"]),
+  notes: z.string().optional(),
   tags: z.array(z.string()),
 });
 
@@ -30,6 +37,7 @@ export function AddContentPage() {
   const [title, setTitle] = useState("");
   const [link, setLink] = useState("");
   const [type, setType] = useState<ContentType>("article");
+  const [notes, setNotes] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [newTagTitle, setNewTagTitle] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -92,15 +100,16 @@ export function AddContentPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       const data = contentSchema.parse({
         title,
         link,
         type,
+        notes: notes.trim() || undefined, // Only include notes if not empty
         tags: selectedTags,
       });
-      
+
       createContentMutation.mutate(data);
       setErrors({});
     } catch (error) {
@@ -119,7 +128,7 @@ export function AddContentPage() {
   return (
     <div className="max-w-2xl mx-auto">
       <h1 className="text-3xl font-bold mb-6">Add New Content</h1>
-      
+
       <Card>
         <CardHeader>
           <CardTitle>Content Details</CardTitle>
@@ -135,15 +144,20 @@ export function AddContentPage() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Enter a descriptive title"
-                className={errors.title ? "border-[hsl(var(--destructive))]" : ""}
+                className={
+                  errors.title ? "border-[hsl(var(--destructive))]" : ""
+                }
               />
               {errors.title && (
-                <p className="mt-1 text-sm" style={{ color: "hsl(var(--destructive))" }}>
+                <p
+                  className="mt-1 text-sm"
+                  style={{ color: "hsl(var(--destructive))" }}
+                >
                   {errors.title}
                 </p>
               )}
             </div>
-            
+
             <div>
               <label htmlFor="link" className="block mb-2 font-medium">
                 Link
@@ -153,15 +167,20 @@ export function AddContentPage() {
                 value={link}
                 onChange={(e) => setLink(e.target.value)}
                 placeholder="https://example.com"
-                className={errors.link ? "border-[hsl(var(--destructive))]" : ""}
+                className={
+                  errors.link ? "border-[hsl(var(--destructive))]" : ""
+                }
               />
               {errors.link && (
-                <p className="mt-1 text-sm" style={{ color: "hsl(var(--destructive))" }}>
+                <p
+                  className="mt-1 text-sm"
+                  style={{ color: "hsl(var(--destructive))" }}
+                >
                   {errors.link}
                 </p>
               )}
             </div>
-            
+
             <div>
               <label className="block mb-2 font-medium">Content Type</label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -173,13 +192,15 @@ export function AddContentPage() {
                       ? "border-[hsl(var(--primary))]"
                       : "border-[hsl(var(--border))]"
                   }`}
-                  style={{ 
-                    backgroundColor: type === "article" 
-                      ? "hsl(var(--primary))" 
-                      : "hsl(var(--background))",
-                    color: type === "article"
-                      ? "hsl(var(--primary-foreground))"
-                      : "hsl(var(--foreground))"
+                  style={{
+                    backgroundColor:
+                      type === "article"
+                        ? "hsl(var(--primary))"
+                        : "hsl(var(--background))",
+                    color:
+                      type === "article"
+                        ? "hsl(var(--primary-foreground))"
+                        : "hsl(var(--foreground))",
                   }}
                 >
                   📄 Article
@@ -192,13 +213,15 @@ export function AddContentPage() {
                       ? "border-[hsl(var(--primary))]"
                       : "border-[hsl(var(--border))]"
                   }`}
-                  style={{ 
-                    backgroundColor: type === "video" 
-                      ? "hsl(var(--primary))" 
-                      : "hsl(var(--background))",
-                    color: type === "video"
-                      ? "hsl(var(--primary-foreground))"
-                      : "hsl(var(--foreground))"
+                  style={{
+                    backgroundColor:
+                      type === "video"
+                        ? "hsl(var(--primary))"
+                        : "hsl(var(--background))",
+                    color:
+                      type === "video"
+                        ? "hsl(var(--primary-foreground))"
+                        : "hsl(var(--foreground))",
                   }}
                 >
                   🎬 Video
@@ -211,13 +234,15 @@ export function AddContentPage() {
                       ? "border-[hsl(var(--primary))]"
                       : "border-[hsl(var(--border))]"
                   }`}
-                  style={{ 
-                    backgroundColor: type === "image" 
-                      ? "hsl(var(--primary))" 
-                      : "hsl(var(--background))",
-                    color: type === "image"
-                      ? "hsl(var(--primary-foreground))"
-                      : "hsl(var(--foreground))"
+                  style={{
+                    backgroundColor:
+                      type === "image"
+                        ? "hsl(var(--primary))"
+                        : "hsl(var(--background))",
+                    color:
+                      type === "image"
+                        ? "hsl(var(--primary-foreground))"
+                        : "hsl(var(--foreground))",
                   }}
                 >
                   🖼️ Image
@@ -230,27 +255,43 @@ export function AddContentPage() {
                       ? "border-[hsl(var(--primary))]"
                       : "border-[hsl(var(--border))]"
                   }`}
-                  style={{ 
-                    backgroundColor: type === "audio" 
-                      ? "hsl(var(--primary))" 
-                      : "hsl(var(--background))",
-                    color: type === "audio"
-                      ? "hsl(var(--primary-foreground))"
-                      : "hsl(var(--foreground))"
+                  style={{
+                    backgroundColor:
+                      type === "audio"
+                        ? "hsl(var(--primary))"
+                        : "hsl(var(--background))",
+                    color:
+                      type === "audio"
+                        ? "hsl(var(--primary-foreground))"
+                        : "hsl(var(--foreground))",
                   }}
                 >
                   🎵 Audio
                 </button>
               </div>
             </div>
-            
+
+            <div>
+              <label className="block mb-2 font-medium">
+                Notes <span className="text-sm text-gray-500">(Optional)</span>
+              </label>
+              <MarkdownEditor
+                value={notes}
+                onChange={setNotes}
+                placeholder="Add your notes in Markdown format..."
+                height={200}
+              />
+            </div>
+
             <div>
               <label className="block mb-2 font-medium">Tags</label>
               <div className="flex flex-wrap gap-2 mb-3">
                 {tags.map((tag) => (
                   <Badge
                     key={tag._id}
-                    variant={selectedTags.includes(tag._id) ? "default" : "outline"}
+                    variant={
+                      selectedTags.includes(tag._id) ? "default" : "outline"
+                    }
                     className="cursor-pointer"
                     onClick={() => toggleTag(tag._id)}
                   >
@@ -258,7 +299,7 @@ export function AddContentPage() {
                   </Badge>
                 ))}
               </div>
-              
+
               <div className="flex gap-2">
                 <Input
                   value={newTagTitle}
@@ -269,13 +310,16 @@ export function AddContentPage() {
                 <Button
                   type="button"
                   onClick={handleAddTag}
-                  disabled={!newTagTitle.trim() || createTagMutation.status === "pending"}
+                  disabled={
+                    !newTagTitle.trim() ||
+                    createTagMutation.status === "pending"
+                  }
                 >
                   <PlusIcon className="h-5 w-5" />
                 </Button>
               </div>
             </div>
-            
+
             <div className="flex justify-end space-x-2">
               <Button
                 type="button"
@@ -288,7 +332,9 @@ export function AddContentPage() {
                 type="submit"
                 disabled={createContentMutation.status === "pending"}
               >
-                {createContentMutation.status === "pending" ? "Saving..." : "Save Content"}
+                {createContentMutation.status === "pending"
+                  ? "Saving..."
+                  : "Save Content"}
               </Button>
             </div>
           </form>

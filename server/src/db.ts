@@ -21,10 +21,10 @@ const userSchema = new mongoose.Schema({
 
 const tagSchema = new mongoose.Schema({
   title: { type: String, required: true },
-  userId: { 
-    type: mongoose.Schema.Types.ObjectId, 
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
     ref: "User",
-    required: false // null for global tags, specific userId for user tags
+    required: false, // null for global tags, specific userId for user tags
   },
   isGlobal: { type: Boolean, default: false }, // for predefined global tags
 });
@@ -38,6 +38,7 @@ const contentSchema = new mongoose.Schema({
   link: { type: String, required: true },
   type: { type: String, enum: contentTypes, required: true },
   title: { type: String, required: true },
+  notes: { type: String, required: false }, // Optional markdown notes field
   tags: [{ type: mongoose.Schema.Types.ObjectId, ref: "Tag" }],
   userId: {
     type: mongoose.Schema.Types.ObjectId,

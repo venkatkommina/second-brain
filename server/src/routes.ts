@@ -18,10 +18,16 @@ interface AuthenticatedRequest extends Request {
 
 const router = express.Router();
 
-router.use(cors({
-  origin: ["http://localhost:5173", "http://localhost:3000", "http://localhost:5174"], // allow Vite frontend and other common dev ports
-  credentials: true, // if you're using cookies or auth headers
-}));
+router.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:3000",
+      "http://localhost:5174",
+    ], // allow Vite frontend and other common dev ports
+    credentials: true, // if you're using cookies or auth headers
+  })
+);
 
 router.use(express.json());
 
@@ -119,71 +125,81 @@ router.post("/signin", async (req, res): Promise<any> => {
   }
 });
 
-router.post("/tag", authenticateToken, async (req: AuthenticatedRequest, res): Promise<any> => {
-  try {
-    const tag = req.body;
-    const { success, error } = tagValidation.safeParse(tag);
-    if (!success) {
-      return res.status(411).json({ message: "Invalid input", error: error.errors[0] });
-    }
+router.post(
+  "/tag",
+  authenticateToken,
+  async (req: AuthenticatedRequest, res): Promise<any> => {
+    try {
+      const tag = req.body;
+      const { success, error } = tagValidation.safeParse(tag);
+      if (!success) {
+        return res
+          .status(411)
+          .json({ message: "Invalid input", error: error.errors[0] });
+      }
 
-    const user = await User.findOne({ email: req.email });
-    if (!user) {
-      return res.status(403).json({ message: "User not found" });
-    }
+      const user = await User.findOne({ email: req.email });
+      if (!user) {
+        return res.status(403).json({ message: "User not found" });
+      }
 
-    // Check if tag already exists for this user or as a global tag
-    const existingTag = await Tag.findOne({ 
-      title: tag.title,
-      $or: [
-        { userId: user._id }, // user's own tag
-        { isGlobal: true }    // global tag
-      ]
-    });
-    
-    if (existingTag) {
-      return res.status(403).json({ message: "Tag already exists" });
-    }
-    
-    const newTag = new Tag({
-      title: tag.title,
-      userId: user._id,
-      isGlobal: false
-    });
-    await newTag.save();
+      // Check if tag already exists for this user or as a global tag
+      const existingTag = await Tag.findOne({
+        title: tag.title,
+        $or: [
+          { userId: user._id }, // user's own tag
+          { isGlobal: true }, // global tag
+        ],
+      });
 
-    return res.status(200).json(newTag);
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      console.error(error.message);
+      if (existingTag) {
+        return res.status(403).json({ message: "Tag already exists" });
+      }
+
+      const newTag = new Tag({
+        title: tag.title,
+        userId: user._id,
+        isGlobal: false,
+      });
+      await newTag.save();
+
+      return res.status(200).json(newTag);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error(error.message);
+      }
+      res.status(500).json({ message: "Internal server error" });
     }
-    res.status(500).json({ message: "Internal server error" });
   }
-});
+);
 
-router.get("/tag", authenticateToken, async (req: AuthenticatedRequest, res): Promise<any> => {
-  try {
-    const user = await User.findOne({ email: req.email });
-    if (!user) {
-      return res.status(403).json({ message: "User not found" });
+router.get(
+  "/tag",
+  authenticateToken,
+  async (req: AuthenticatedRequest, res): Promise<any> => {
+    try {
+      const user = await User.findOne({ email: req.email });
+      if (!user) {
+        return res.status(403).json({ message: "User not found" });
+      }
+
+      // Get user's own tags and global tags
+      const tags = await Tag.find({
+        $or: [
+          { userId: user._id }, // user's own tags
+          { isGlobal: true }, // global tags (userId is null)
+        ],
+      });
+
+      res.status(200).json(tags);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error(error.message);
+      }
+      res.status(500).json(error);
     }
-
-    // Get user's own tags and global tags
-    const tags = await Tag.find({
-      $or: [
-        { userId: user._id },  // user's own tags
-        {isGlobal: true}      // global tags (userId is null)
-      ]
-    });
-
-    res.status(200).json(tags);
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      console.error(error.message);
-    }
-    res.status(500).json(error);
   }
-});
+);
 
 router.post(
   "/content",
@@ -223,7 +239,9 @@ router.get(
 
       const user = await User.findOne({ email });
 
-      const content = await Content.find({ userId: user?._id }).populate('tags');
+      const content = await Content.find({ userId: user?._id }).populate(
+        "tags"
+      );
 
       res.status(200).json(content);
     } catch (error: unknown) {
@@ -256,7 +274,8 @@ router.delete("/content/:contentId", async (req: AuthenticatedRequest, res) => {
       return;
     }
 
-    await User.deleteOne({ _id: contentId });
+    await Content.deleteOne({ _id: contentId });
+    res.status(200).json({ message: "Content deleted successfully" });
   } catch (error: unknown) {
     if (error instanceof Error) {
       console.error(error.message);
@@ -264,6 +283,52 @@ router.delete("/content/:contentId", async (req: AuthenticatedRequest, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
+
+router.put(
+  "/content/:contentId",
+  authenticateToken,
+  async (req: AuthenticatedRequest, res): Promise<any> => {
+    try {
+      const contentId = req.params.contentId;
+      const updatedData = req.body;
+
+      const { success, error } = contentValidation.safeParse(updatedData);
+      if (!success) {
+        return res.status(411).json(error.errors[0]);
+      }
+
+      const content = await Content.findOne({ _id: contentId });
+      if (!content) {
+        return res.status(404).json({
+          message: "Content not found",
+        });
+      }
+
+      const user = await User.findOne({ email: req.email });
+      if (!user || user._id.toString() !== content.userId.toString()) {
+        return res
+          .status(403)
+          .json({ message: "You are not allowed to update this content" });
+      }
+
+      const updatedContent = await Content.findByIdAndUpdate(
+        contentId,
+        updatedData,
+        { new: true }
+      ).populate("tags");
+
+      res.status(200).json({
+        message: "Content updated successfully",
+        content: updatedContent,
+      });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error(error.message);
+      }
+      res.status(500).json({ message: "Internal server error" });
+    }
+  }
+);
 
 router.post(
   "/brain/share",
