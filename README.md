@@ -178,8 +178,6 @@ second-brain/
 5. **Search and filter** your content on the dashboard
 6. **Share your brain** publicly using the share feature
 
-```
-
 ## Future Roadmap
 
 ### 🤖 AI Integration
@@ -197,4 +195,3 @@ This project is licensed under the MIT License.
 ---
 
 **Built with ❤️ by [Venkat](https://github.com/venkatkommina)**
-```
