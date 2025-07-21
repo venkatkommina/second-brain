@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../lib/axios";
 import { Link } from "react-router-dom";
 import {
@@ -11,13 +11,16 @@ import {
 import { Button } from "../components/ui/Button";
 import { Badge } from "../components/ui/Badge";
 import { MarkdownViewer } from "../components/MarkdownViewer";
-import { PlusIcon } from "@heroicons/react/24/outline";
+import ShareModal from "../components/ShareModal";
+import { PlusIcon, ShareIcon, PauseIcon } from "@heroicons/react/24/outline";
 import { truncateText } from "../lib/utils";
 
 // Types based on your backend models
 type Tag = {
   _id: string;
   title: string;
+  userId?: string;
+  isGlobal?: boolean;
 };
 
 type Content = {
@@ -34,6 +37,32 @@ export function DashboardPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [shareLink, setShareLink] = useState<string>("");
+  const [isSharing, setIsSharing] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+
+  const queryClient = useQueryClient();
+
+  // Share brain mutation
+  const shareMutation = useMutation({
+    mutationFn: async () => {
+      const response = await api.post("/brain/share");
+      return response.data;
+    },
+    onSuccess: (data) => {
+      const hash = data.link?.split("/brain/")[1] || "";
+      const frontendLink = `${window.location.origin}/brain/${hash}`;
+      setShareLink(frontendLink);
+      setIsSharing(data.isPublic);
+      setShowShareModal(true);
+
+      // Refetch the sharing status to keep it in sync
+      queryClient.invalidateQueries({ queryKey: ["brain-sharing-status"] });
+    },
+    onError: () => {
+      alert("Failed to toggle brain sharing");
+    },
+  });
 
   // Fetch content
   const { data: content = [], isLoading: isLoadingContent } = useQuery({
@@ -52,6 +81,32 @@ export function DashboardPage() {
       return response.data;
     },
   });
+
+  // Check if brain is currently being shared
+  const { data: sharingStatus } = useQuery({
+    queryKey: ["brain-sharing-status"],
+    queryFn: async () => {
+      try {
+        const response = await api.get("/brain/status");
+        return response.data;
+      } catch (error) {
+        console.error("Error fetching sharing status:", error);
+        return { isPublic: false };
+      }
+    },
+  });
+
+  // Update local state when sharing status is fetched
+  useEffect(() => {
+    if (sharingStatus) {
+      setIsSharing(sharingStatus.isPublic);
+      if (sharingStatus.isPublic && sharingStatus.link) {
+        const hash = sharingStatus.link.split("/brain/")[1] || "";
+        const frontendLink = `${window.location.origin}/brain/${hash}`;
+        setShareLink(frontendLink);
+      }
+    }
+  }, [sharingStatus]);
 
   // Filter content based on search and tag
   const filteredContent = content.filter((item) => {
@@ -86,11 +141,31 @@ export function DashboardPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-3xl font-bold">Your Brain</h1>
-        <Link to="/content/new">
-          <Button leftIcon={<PlusIcon className="h-5 w-5" />}>
-            Add Content
+        <div className="flex gap-3">
+          <Button
+            onClick={() => shareMutation.mutate()}
+            variant="outline"
+            disabled={shareMutation.isPending}
+          >
+            {isSharing ? (
+              <>
+                <PauseIcon className="h-5 w-5 mr-2" />
+                {shareMutation.isPending ? "Updating..." : "Brain Active"}
+              </>
+            ) : (
+              <>
+                <ShareIcon className="h-5 w-5 mr-2" />
+                {shareMutation.isPending ? "Sharing..." : "Share Brain"}
+              </>
+            )}
           </Button>
-        </Link>
+          <Link to="/content/new">
+            <Button>
+              <PlusIcon className="h-5 w-5 mr-2" />
+              Add Content
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Search and filters */}
@@ -227,6 +302,13 @@ export function DashboardPage() {
           ))}
         </div>
       )}
+
+      <ShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        shareLink={shareLink}
+        isSharing={isSharing}
+      />
     </div>
   );
 }

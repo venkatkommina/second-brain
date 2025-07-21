@@ -1,8 +1,8 @@
-import { Fragment, useState } from 'react';
-import { Dialog, Transition } from '@headlessui/react';
-import { useMutation, useQueryClient } from 'react-query';
-import api from '../lib/axios';
-import toast from 'react-hot-toast';
+import { Fragment, useState } from "react";
+import { Dialog, Transition } from "@headlessui/react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import api from "../lib/axios";
+import toast from "react-hot-toast";
 
 interface Tag {
   _id: string;
@@ -15,40 +15,42 @@ interface AddContentModalProps {
   tags: Tag[];
 }
 
-export default function AddContentModal({ isOpen, onClose, tags }: AddContentModalProps) {
-  const [title, setTitle] = useState('');
-  const [link, setLink] = useState('');
-  const [type, setType] = useState('article');
+export default function AddContentModal({
+  isOpen,
+  onClose,
+  tags,
+}: AddContentModalProps) {
+  const [title, setTitle] = useState("");
+  const [link, setLink] = useState("");
+  const [type, setType] = useState("article");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  
+
   const queryClient = useQueryClient();
 
-  const addContent = useMutation(
-    async () => {
-      await api.post('/content', {
+  const addContent = useMutation({
+    mutationFn: async () => {
+      await api.post("/content", {
         title,
         link,
         type,
         tags: selectedTags,
       });
     },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries('contents');
-        toast.success('Content added successfully');
-        onClose();
-        resetForm();
-      },
-      onError: () => {
-        toast.error('Failed to add content');
-      },
-    }
-  );
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["content"] });
+      toast.success("Content added successfully");
+      onClose();
+      resetForm();
+    },
+    onError: () => {
+      toast.error("Failed to add content");
+    },
+  });
 
   const resetForm = () => {
-    setTitle('');
-    setLink('');
-    setType('article');
+    setTitle("");
+    setLink("");
+    setType("article");
     setSelectedTags([]);
   };
 
@@ -92,7 +94,10 @@ export default function AddContentModal({ isOpen, onClose, tags }: AddContentMod
                 </Dialog.Title>
                 <form onSubmit={handleSubmit} className="mt-4 space-y-4">
                   <div>
-                    <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+                    <label
+                      htmlFor="title"
+                      className="block text-sm font-medium text-gray-700"
+                    >
                       Title
                     </label>
                     <input
@@ -106,7 +111,10 @@ export default function AddContentModal({ isOpen, onClose, tags }: AddContentMod
                   </div>
 
                   <div>
-                    <label htmlFor="link" className="block text-sm font-medium text-gray-700">
+                    <label
+                      htmlFor="link"
+                      className="block text-sm font-medium text-gray-700"
+                    >
                       Link
                     </label>
                     <input
@@ -120,7 +128,10 @@ export default function AddContentModal({ isOpen, onClose, tags }: AddContentMod
                   </div>
 
                   <div>
-                    <label htmlFor="type" className="block text-sm font-medium text-gray-700">
+                    <label
+                      htmlFor="type"
+                      className="block text-sm font-medium text-gray-700"
+                    >
                       Type
                     </label>
                     <select
@@ -137,10 +148,15 @@ export default function AddContentModal({ isOpen, onClose, tags }: AddContentMod
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Tags</label>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Tags
+                    </label>
                     <div className="mt-2 space-y-2">
                       {tags.map((tag) => (
-                        <label key={tag._id} className="inline-flex items-center mr-4">
+                        <label
+                          key={tag._id}
+                          className="inline-flex items-center mr-4"
+                        >
                           <input
                             type="checkbox"
                             checked={selectedTags.includes(tag._id)}
@@ -148,7 +164,9 @@ export default function AddContentModal({ isOpen, onClose, tags }: AddContentMod
                               if (e.target.checked) {
                                 setSelectedTags([...selectedTags, tag._id]);
                               } else {
-                                setSelectedTags(selectedTags.filter(id => id !== tag._id));
+                                setSelectedTags(
+                                  selectedTags.filter((id) => id !== tag._id)
+                                );
                               }
                             }}
                             className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"

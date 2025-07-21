@@ -7,13 +7,23 @@ interface ContentCardProps {
     title: string;
     link: string;
     type: string;
-    tags: string[];
+    tags: Array<{
+      _id: string;
+      title: string;
+      userId?: string;
+      isGlobal?: boolean;
+    }>;
     notes?: string; // Optional notes field
   };
   onDelete: () => void;
+  readOnly?: boolean; // Optional read-only mode
 }
 
-export default function ContentCard({ content, onDelete }: ContentCardProps) {
+export default function ContentCard({
+  content,
+  onDelete,
+  readOnly = false,
+}: ContentCardProps) {
   const getTypeIcon = () => {
     switch (content.type) {
       case "article":
@@ -48,12 +58,14 @@ export default function ContentCard({ content, onDelete }: ContentCardProps) {
             >
               <FiExternalLink size={20} />
             </a>
-            <button
-              onClick={onDelete}
-              className="text-red-400 hover:text-red-500"
-            >
-              <FiTrash2 size={20} />
-            </button>
+            {!readOnly && (
+              <button
+                onClick={onDelete}
+                className="text-red-400 hover:text-red-500"
+              >
+                <FiTrash2 size={20} />
+              </button>
+            )}
           </div>
         </div>
         {content.notes && (
@@ -65,10 +77,10 @@ export default function ContentCard({ content, onDelete }: ContentCardProps) {
         <div className="mt-4 flex flex-wrap gap-2">
           {content.tags.map((tag) => (
             <span
-              key={tag}
+              key={tag._id}
               className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800"
             >
-              {tag}
+              {tag.title}
             </span>
           ))}
         </div>

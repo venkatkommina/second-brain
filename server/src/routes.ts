@@ -330,6 +330,42 @@ router.put(
   }
 );
 
+// Get brain sharing status
+router.get(
+  "/brain/status",
+  authenticateToken,
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      const user = await User.findOne({ email: req.email });
+      if (!user) {
+        res.status(403).json({ message: "User not found" });
+        return;
+      }
+
+      const link = await Link.findOne({ userId: user._id });
+      if (!link) {
+        res.status(200).json({
+          isPublic: false,
+          link: null,
+        });
+        return;
+      }
+
+      res.status(200).json({
+        isPublic: link.isPublic,
+        link: link.isPublic
+          ? `${req.protocol}://${req.get("host")}/api/v1/brain/${link.hash}`
+          : null,
+      });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error(error.message);
+      }
+      res.status(500).json({ message: "Internal server error" });
+    }
+  }
+);
+
 router.post(
   "/brain/share",
   authenticateToken,

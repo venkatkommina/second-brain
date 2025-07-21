@@ -1,42 +1,92 @@
-import { useParams } from 'react-router-dom';
-import { useQuery } from 'react-query';
-import api from '../lib/axios';
-import ContentCard from '../components/ContentCard';
+import { useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import api from "../lib/axios";
+import ContentCard from "../components/ContentCard";
 
 interface Content {
   _id: string;
   title: string;
   link: string;
   type: string;
-  tags: string[];
+  tags: Array<{
+    _id: string;
+    title: string;
+    userId?: string;
+    isGlobal?: boolean;
+  }>;
+  notes?: string;
 }
 
 export default function SharedBrain() {
   const { hash } = useParams();
 
-  const { data: contents, isLoading } = useQuery(['shared-brain', hash], async () => {
-    const response = await api.get(`/brain/${hash}`);
-    return response.data;
+  const {
+    data: contents,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["shared-brain", hash],
+    queryFn: async () => {
+      const response = await api.get(`/brain/${hash}`);
+      return response.data;
+    },
   });
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading shared brain...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            Brain Not Found
+          </h2>
+          <p className="text-gray-600">
+            This brain is either private or doesn't exist.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-gray-100">
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 sm:px-0">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Shared Brain Contents</h2>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {contents?.map((content: Content) => (
-              <ContentCard
-                key={content._id}
-                content={content}
-                onDelete={() => {}}
-              />
-            ))}
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold text-gray-900">Shared Brain</h1>
+            <p className="text-gray-600 mt-2">
+              Exploring someone's curated knowledge collection
+            </p>
           </div>
+
+          {contents && contents.length > 0 ? (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {contents.map((content: Content) => (
+                <ContentCard
+                  key={content._id}
+                  content={content}
+                  onDelete={() => {}} // Read-only mode
+                  readOnly={true}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-gray-500">
+                This brain doesn't have any content yet.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>
