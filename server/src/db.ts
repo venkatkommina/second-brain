@@ -39,6 +39,7 @@ const contentSchema = new mongoose.Schema({
   type: { type: String, enum: contentTypes, required: true },
   title: { type: String, required: true },
   notes: { type: String, required: false }, // Optional markdown notes field
+  isShared: { type: Boolean, default: false }, // For selective sharing
   tags: [{ type: mongoose.Schema.Types.ObjectId, ref: "Tag" }],
   userId: {
     type: mongoose.Schema.Types.ObjectId,

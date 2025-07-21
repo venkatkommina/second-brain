@@ -34,10 +34,10 @@ export default function SharedBrain() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading shared brain...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading shared brain...</p>
         </div>
       </div>
     );
@@ -45,12 +45,12 @@ export default function SharedBrain() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+          <h2 className="text-2xl font-bold text-foreground mb-4">
             Brain Not Found
           </h2>
-          <p className="text-gray-600">
+          <p className="text-muted-foreground">
             This brain is either private or doesn't exist.
           </p>
         </div>
@@ -59,12 +59,12 @@ export default function SharedBrain() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 sm:px-0">
           <div className="mb-6">
-            <h1 className="text-3xl font-bold text-gray-900">Shared Brain</h1>
-            <p className="text-gray-600 mt-2">
+            <h1 className="text-3xl font-bold text-foreground">Shared Brain</h1>
+            <p className="text-muted-foreground mt-2">
               Exploring someone's curated knowledge collection
             </p>
           </div>
@@ -82,7 +82,7 @@ export default function SharedBrain() {
             </div>
           ) : (
             <div className="text-center py-12">
-              <p className="text-gray-500">
+              <p className="text-muted-foreground">
                 This brain doesn't have any content yet.
               </p>
             </div>

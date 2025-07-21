@@ -10,6 +10,9 @@ interface ShareModalProps {
   onClose: () => void;
   shareLink: string;
   isSharing: boolean;
+  onShareAll?: () => void;
+  onShareSelected?: () => void;
+  showOptions?: boolean;
 }
 
 export default function ShareModal({
@@ -17,6 +20,9 @@ export default function ShareModal({
   onClose,
   shareLink,
   isSharing,
+  onShareAll,
+  onShareSelected,
+  showOptions = false,
 }: ShareModalProps) {
   const [copied, setCopied] = useState(false);
 
@@ -55,11 +61,51 @@ export default function ShareModal({
         </div>
 
         <div className="space-y-4">
-          {isSharing ? (
+          {showOptions && !isSharing ? (
+            <>
+              <p className="text-sm text-gray-600">
+                Choose what you'd like to share:
+              </p>
+              <div className="space-y-3">
+                <button
+                  onClick={onShareAll}
+                  className="w-full flex items-center gap-3 p-4 border-2 border-gray-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-colors text-left"
+                >
+                  <div className="flex-shrink-0 w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
+                    🌐
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-gray-900">
+                      Share Everything
+                    </h4>
+                    <p className="text-sm text-gray-500">
+                      Share all your content publicly
+                    </p>
+                  </div>
+                </button>
+                <button
+                  onClick={onShareSelected}
+                  className="w-full flex items-center gap-3 p-4 border-2 border-gray-200 rounded-lg hover:border-green-300 hover:bg-green-50 transition-colors text-left"
+                >
+                  <div className="flex-shrink-0 w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                    ✅
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-gray-900">
+                      Share Selected Only
+                    </h4>
+                    <p className="text-sm text-gray-500">
+                      Share only items marked as public
+                    </p>
+                  </div>
+                </button>
+              </div>
+            </>
+          ) : isSharing ? (
             <>
               <p className="text-sm text-gray-600">
                 Your brain is now publicly accessible. Anyone with this link can
-                view your content.
+                view your shared content.
               </p>
               <div className="bg-gray-50 rounded-lg p-3 border">
                 <div className="flex items-center gap-2">
@@ -90,7 +136,7 @@ export default function ShareModal({
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                 <p className="text-sm text-blue-800">
                   💡 <strong>Tip:</strong> You can disable sharing anytime by
-                  clicking the "Brain Active" button.
+                  clicking the "Brain Active" button again.
                 </p>
               </div>
             </>

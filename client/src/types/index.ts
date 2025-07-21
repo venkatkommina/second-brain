@@ -13,6 +13,7 @@ export interface Content {
   link: string;
   type: "image" | "video" | "article" | "audio";
   notes?: string;
+  isShared?: boolean;
   tags: Tag[];
   userId: string;
 }

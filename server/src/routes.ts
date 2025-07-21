@@ -426,9 +426,10 @@ router.get("/brain/:hash", async (req, res) => {
       return;
     }
 
-    const content = await Content.find({ userId: link.userId }).populate(
-      "tags"
-    );
+    const content = await Content.find({
+      userId: link.userId,
+      isShared: true,
+    }).populate("tags");
 
     res.status(200).json(content);
   } catch (error: unknown) {
@@ -438,5 +439,74 @@ router.get("/brain/:hash", async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
+
+// Toggle content sharing status
+router.patch(
+  "/content/:contentId/share",
+  authenticateToken,
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      const contentId = req.params.contentId;
+      const { isShared } = req.body;
+
+      const content = await Content.findOne({ _id: contentId });
+      if (!content) {
+        res.status(404).json({ message: "Content not found" });
+        return;
+      }
+
+      const user = await User.findOne({ email: req.email });
+      if (!user || user._id.toString() !== content.userId.toString()) {
+        res.status(403).json({
+          message: "You are not allowed to modify this content",
+        });
+        return;
+      }
+
+      const updatedContent = await Content.findByIdAndUpdate(
+        contentId,
+        { isShared: isShared },
+        { new: true }
+      ).populate("tags");
+
+      res.status(200).json({
+        message: `Content ${isShared ? "shared" : "unshared"} successfully`,
+        content: updatedContent,
+      });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error(error.message);
+      }
+      res.status(500).json({ message: "Internal server error" });
+    }
+  }
+);
+
+// Bulk share all content
+router.post(
+  "/content/share-all",
+  authenticateToken,
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      const user = await User.findOne({ email: req.email });
+      if (!user) {
+        res.status(403).json({ message: "User not found" });
+        return;
+      }
+
+      // Set all user's content to shared
+      await Content.updateMany({ userId: user._id }, { isShared: true });
+
+      res.status(200).json({
+        message: "All content shared successfully",
+      });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error(error.message);
+      }
+      res.status(500).json({ message: "Internal server error" });
+    }
+  }
+);
 
 export default router;

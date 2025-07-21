@@ -20,6 +20,7 @@ export const contentValidation = z.object({
   type: z.string(),
   title: z.string(),
   notes: z.string().optional(), // Optional notes field for markdown content
+  isShared: z.boolean().optional(), // Optional selective sharing field
   tags: z.string().array(),
 });
 

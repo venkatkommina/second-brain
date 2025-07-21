@@ -2,18 +2,14 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../lib/axios";
 import { Link } from "react-router-dom";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Badge } from "../components/ui/Badge";
-import { MarkdownViewer } from "../components/MarkdownViewer";
 import ShareModal from "../components/ShareModal";
+import EditContentModal from "../components/EditContentModal";
+import DeleteConfirmModal from "../components/DeleteConfirmModal";
+import ContentCard from "../components/ContentCard";
 import { PlusIcon, ShareIcon, PauseIcon } from "@heroicons/react/24/outline";
-import { truncateText } from "../lib/utils";
+import toast from "react-hot-toast";
 
 // Types based on your backend models
 type Tag = {
@@ -29,17 +25,23 @@ type Content = {
   type: "image" | "video" | "article" | "audio";
   title: string;
   notes?: string; // Optional notes field
+  isShared?: boolean; // Optional sharing status
   tags: Tag[];
   userId: string;
 };
 
 export function DashboardPage() {
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("list");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [shareLink, setShareLink] = useState<string>("");
   const [isSharing, setIsSharing] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [editingContent, setEditingContent] = useState<Content | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [contentToDelete, setContentToDelete] = useState<string | null>(null);
+  const [isInitiatingShare, setIsInitiatingShare] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -53,14 +55,73 @@ export function DashboardPage() {
       const hash = data.link?.split("/brain/")[1] || "";
       const frontendLink = `${window.location.origin}/brain/${hash}`;
       setShareLink(frontendLink);
-      setIsSharing(data.isPublic);
+      const wasSharing = isSharing;
+      const isNowSharing = data.isPublic;
+      setIsSharing(isNowSharing);
+
+      // Show modal when toggling sharing
       setShowShareModal(true);
+      // Show options when going from not sharing to sharing
+      const shouldShowOptions = !wasSharing && isNowSharing;
+      console.log("Share logic:", {
+        wasSharing,
+        isNowSharing,
+        shouldShowOptions,
+      });
+      setIsInitiatingShare(shouldShowOptions);
 
       // Refetch the sharing status to keep it in sync
       queryClient.invalidateQueries({ queryKey: ["brain-sharing-status"] });
     },
     onError: () => {
-      alert("Failed to toggle brain sharing");
+      toast.error("Failed to toggle brain sharing");
+    },
+  });
+
+  // Share all content mutation
+  const shareAllMutation = useMutation({
+    mutationFn: async () => {
+      await api.post("/content/share-all");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["content"] });
+      // Enable brain sharing and show success
+      shareMutation.mutate();
+    },
+    onError: () => {
+      toast.error("Failed to share all content");
+    },
+  });
+
+  // Delete content mutation
+  const deleteContentMutation = useMutation({
+    mutationFn: async (contentId: string) => {
+      await api.delete(`/content/${contentId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["content"] });
+    },
+    onError: () => {
+      toast.error("Failed to delete content");
+    },
+  });
+
+  // Toggle content sharing mutation
+  const toggleShareMutation = useMutation({
+    mutationFn: async ({
+      contentId,
+      isShared,
+    }: {
+      contentId: string;
+      isShared: boolean;
+    }) => {
+      await api.patch(`/content/${contentId}/share`, { isShared });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["content"] });
+    },
+    onError: () => {
+      toast.error("Failed to toggle content sharing");
     },
   });
 
@@ -108,6 +169,44 @@ export function DashboardPage() {
     }
   }, [sharingStatus]);
 
+  // Handler functions
+  const handleEditContent = (content: Content) => {
+    setEditingContent(content);
+    setShowEditModal(true);
+  };
+
+  const handleDeleteContent = (contentId: string) => {
+    setContentToDelete(contentId);
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (contentToDelete) {
+      deleteContentMutation.mutate(contentToDelete);
+      setContentToDelete(null);
+    }
+  };
+
+  const handleToggleShare = (content: Content) => {
+    toggleShareMutation.mutate({
+      contentId: content._id,
+      isShared: !content.isShared,
+    });
+  };
+
+  const handleShareAll = () => {
+    setShowShareModal(false); // Close modal first
+    setIsInitiatingShare(false); // Reset state
+    shareAllMutation.mutate();
+  };
+
+  const handleShareSelected = () => {
+    setShowShareModal(false); // Close modal first
+    setIsInitiatingShare(false); // Reset state
+    // Enable brain sharing with current selected items
+    shareMutation.mutate();
+  };
+
   // Filter content based on search and tag
   const filteredContent = content.filter((item) => {
     const matchesSearch = searchQuery
@@ -120,22 +219,6 @@ export function DashboardPage() {
 
     return matchesSearch && matchesTag;
   });
-
-  // Get content type icon
-  const getContentTypeIcon = (type: Content["type"]) => {
-    switch (type) {
-      case "image":
-        return "🖼️";
-      case "video":
-        return "🎬";
-      case "article":
-        return "📄";
-      case "audio":
-        return "🎵";
-      default:
-        return "📌";
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -183,7 +266,7 @@ export function DashboardPage() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <div className="flex gap-2">
+        <div className="hidden md:flex gap-2">
           <Button
             variant={viewMode === "grid" ? "primary" : "outline"}
             onClick={() => setViewMode("grid")}
@@ -245,69 +328,42 @@ export function DashboardPage() {
           }
         >
           {filteredContent.map((item) => (
-            <Card
+            <ContentCard
               key={item._id}
-              className={viewMode === "list" ? "flex overflow-hidden" : ""}
-            >
-              {viewMode === "list" && (
-                <div
-                  className="flex items-center justify-center p-6 text-4xl"
-                  style={{ backgroundColor: "hsl(var(--muted))" }}
-                >
-                  {getContentTypeIcon(item.type)}
-                </div>
-              )}
-              <div className="flex-1">
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    {viewMode === "grid" && (
-                      <span className="text-2xl">
-                        {getContentTypeIcon(item.type)}
-                      </span>
-                    )}
-                    <CardTitle className="truncate">{item.title}</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {item.tags.map((tag) => (
-                      <Badge key={tag._id} variant="secondary">
-                        {tag.title}
-                      </Badge>
-                    ))}
-                  </div>
-                  {item.notes && (
-                    <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">
-                        Notes:
-                      </h4>
-                      <MarkdownViewer
-                        content={item.notes}
-                        className="text-gray-600"
-                      />
-                    </div>
-                  )}
-                  <a
-                    href={item.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:underline"
-                    style={{ color: "hsl(var(--primary))" }}
-                  >
-                    {truncateText(item.link, 50)}
-                  </a>
-                </CardContent>
-              </div>
-            </Card>
+              content={item}
+              onDelete={() => handleDeleteContent(item._id)}
+              onEdit={() => handleEditContent(item)}
+              onToggleShare={() => handleToggleShare(item)}
+            />
           ))}
         </div>
       )}
 
       <ShareModal
         isOpen={showShareModal}
-        onClose={() => setShowShareModal(false)}
+        onClose={() => {
+          setShowShareModal(false);
+          setIsInitiatingShare(false);
+        }}
         shareLink={shareLink}
         isSharing={isSharing}
+        onShareAll={handleShareAll}
+        onShareSelected={handleShareSelected}
+        showOptions={isInitiatingShare}
+      />
+
+      <EditContentModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        content={editingContent}
+        tags={tags}
+      />
+
+      <DeleteConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleConfirmDelete}
+        isLoading={deleteContentMutation.isPending}
       />
     </div>
   );
