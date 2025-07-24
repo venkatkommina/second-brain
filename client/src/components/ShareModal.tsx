@@ -50,7 +50,11 @@ export default function ShareModal({
       <div className="fixed top-20 right-6 bg-white rounded-xl shadow-xl border z-50 w-96 p-6 transform transition-all duration-200 ease-out">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900">
-            {isSharing ? "Brain Shared!" : "Sharing Disabled"}
+            {showOptions
+              ? "Share Your Brain"
+              : isSharing
+              ? "Brain Shared!"
+              : "Sharing Disabled"}
           </h3>
           <button
             onClick={onClose}

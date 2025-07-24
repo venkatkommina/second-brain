@@ -55,22 +55,12 @@ export function DashboardPage() {
       const hash = data.link?.split("/brain/")[1] || "";
       const frontendLink = `${window.location.origin}/brain/${hash}`;
       setShareLink(frontendLink);
-      const wasSharing = isSharing;
-      const isNowSharing = data.isPublic;
-      setIsSharing(isNowSharing);
+      setIsSharing(data.isPublic);
 
-      // Show modal when toggling sharing
+      // Show modal with the share link or status, not options
       setShowShareModal(true);
-      // Show options when going from not sharing to sharing
-      const shouldShowOptions = !wasSharing && isNowSharing;
-      console.log("Share logic:", {
-        wasSharing,
-        isNowSharing,
-        shouldShowOptions,
-      });
-      setIsInitiatingShare(shouldShowOptions);
+      setIsInitiatingShare(false);
 
-      // Refetch the sharing status to keep it in sync
       queryClient.invalidateQueries({ queryKey: ["brain-sharing-status"] });
     },
     onError: () => {
@@ -85,13 +75,25 @@ export function DashboardPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["content"] });
-      // Enable brain sharing and show success
+      // After sharing all content, activate brain sharing
       shareMutation.mutate();
     },
     onError: () => {
       toast.error("Failed to share all content");
     },
   });
+
+  // Handler for the main "Share Brain" button
+  const handleShareBrainClick = () => {
+    // If brain is already shared, clicking again will disable it
+    if (isSharing) {
+      shareMutation.mutate();
+      return;
+    }
+    // If not shared, open the modal to ask for sharing preference
+    setShowShareModal(true);
+    setIsInitiatingShare(true);
+  };
 
   // Delete content mutation
   const deleteContentMutation = useMutation({
@@ -226,7 +228,7 @@ export function DashboardPage() {
         <h1 className="text-3xl font-bold">Your Brain</h1>
         <div className="flex gap-3">
           <Button
-            onClick={() => shareMutation.mutate()}
+            onClick={handleShareBrainClick}
             variant="outline"
             disabled={shareMutation.isPending}
           >
