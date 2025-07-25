@@ -16,7 +16,20 @@ export const connectToDB = async () => {
 
 const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
+  password: { type: String, required: false }, // Optional for OAuth users
+  googleId: { type: String, unique: true, sparse: true }, // For Google OAuth
+  firstName: { type: String },
+  lastName: { type: String },
+  profilePicture: { type: String },
+  authProvider: { type: String, enum: ['local', 'google'], default: 'local' },
+  // Password reset fields
+  resetPasswordToken: { type: String },
+  resetPasswordExpires: { type: Date },
+  // Email verification
+  isEmailVerified: { type: Boolean, default: false },
+  emailVerificationToken: { type: String },
+}, {
+  timestamps: true // adds createdAt and updatedAt
 });
 
 const tagSchema = new mongoose.Schema({

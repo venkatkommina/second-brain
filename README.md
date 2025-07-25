@@ -1,197 +1,130 @@
 # Second Brain 🧠
 
-A personal knowledge management system that helps you organize, store, and manage your digital content with markdown notes support.
+A modern knowledge management system built with React, Node.js, and MongoDB. Organize, tag, and share your digital content with powerful search and sharing capabilities.
 
-## Features
+## ✨ Features
 
-- 📚 **Content Management**: Store and organize articles, videos, images, and audio content
-- 🏷️ **Tagging System**: Categorize your content with custom tags
-- 📝 **Markdown Notes**: Add rich markdown notes to any content item
-- 🔍 **Search & Filter**: Quickly find content by title or tags
-- 📱 **Responsive Design**: Works seamlessly on desktop and mobile
-- 🔐 **Secure Authentication**: JWT-based user authentication (might add oauth)
-- 🔗 **Content Sharing**: Share your brain publicly with generated links
-- 🎨 **Modern UI**: Clean, intuitive interface built with React and Tailwind CSS
+- 📚 **Content Management**: Store articles, videos, images, and audio files
+- 🏷️ **Smart Tagging**: Organize content with tags and filters
+- 📝 **Markdown Notes**: Add rich text notes to any content
+- 🔍 **Powerful Search**: Find content quickly with search functionality
+- 🔗 **Public Sharing**: Share your knowledge base publicly
+- 🎨 **Modern UI**: Clean, responsive design with dark/light mode
+- 🔐 **Secure Auth**: Email/password and Google OAuth authentication
+- 📧 **Password Reset**: Email-based password recovery system
+- 🛡️ **Security**: Rate limiting, CORS, and security headers
 
-## Tech Stack
-
-### Backend
-
-- **Node.js** - Runtime environment
-- **Express.js** - Web framework
-- **MongoDB** - Database
-- **Mongoose** - MongoDB object modeling
-- **JWT** - Authentication
-- **bcrypt** - Password hashing
-
-### Frontend
-
-- **React** - UI framework
-- **TypeScript** - Type safety
-- **Tailwind CSS** - Styling
-- **React Query** - Data fetching and caching
-- **React Router** - Client-side routing
-- **React Markdown** - Markdown rendering
-- **@uiw/react-md-editor** - Markdown editing
-
-### Shared
-
-- **Zod** - Schema validation
-- **TypeScript** - Type safety across the stack
-
-## Getting Started
+## 🚀 Quick Start
 
 ### Prerequisites
-
-- Node.js (v18 or higher)
-- MongoDB (local installation or MongoDB Atlas or MongoDB Compass)
+- Node.js 18+
+- MongoDB (local or MongoDB Atlas)
 - npm or yarn
 
-### Installation
+### Development Setup
 
 1. **Clone the repository**
-
-   ```bash
-   git clone https://github.com/venkatkommina/second-brain.git
-   cd second-brain
-   ```
-
-2. **Install dependencies for all packages**
-
-   ```bash
-   # Install root dependencies
-   npm install
-
-   # Install server dependencies
-   cd server
-   npm install
-
-   # Install client dependencies
-   cd ../client
-   npm install
-
-   # Install common package dependencies
-   cd ../common
-   npm install
-   ```
-
-3. **Set up environment variables**
-
-   Create a `.env` file in the `server` directory:
-
-   ```env
-   DB_URI=mongodb://localhost:27017/second-brain
-   JWT_SECRET=your-super-secret-jwt-key-here
-   PORT=5000
-   ```
-
-4. **Build the common package**
-
-   ```bash
-   cd common
-   npx tsc
-   ```
-
-5. **Start MongoDB (optional - just start a cluster online)**
-
-   Make sure MongoDB is running on your system. If using local MongoDB:
-
-   ```bash
-   mongod
-   ```
-
-6. **Start the development servers**
-
-   **Terminal 1 - Start the backend:**
-
-   ```bash
-   cd server
-   npm start
-   ```
-
-   **Terminal 2 - Start the frontend:**
-
-   ```bash
-   cd client
-   npm run dev
-   ```
-
-7. **Access the application**
-
-   Open your browser and navigate to `http://localhost:5173`
-
-## Project Structure
-
-```
-second-brain/
-├── client/                 # React frontend
-│   ├── src/
-│   │   ├── components/     # Reusable UI components
-│   │   ├── pages/          # Page components
-│   │   ├── contexts/       # React contexts
-│   │   ├── lib/            # Utility functions
-│   │   └── ...
-│   └── package.json
-├── server/                 # Express.js backend
-│   ├── src/
-│   │   ├── db.ts          # Database models and connection
-│   │   ├── routes.ts      # API routes
-│   │   └── index.ts       # Server entry point
-│   └── package.json
-├── common/                 # Shared types and validation
-│   ├── src/
-│   │   └── index.ts       # Zod schemas and types
-│   └── package.json
-└── package.json           # Root package.json
+```bash
+git clone https://github.com/venkatkommina/second-brain.git
+cd second-brain
 ```
 
-## API Endpoints
+2. **Install dependencies**
+```bash
+# Install server dependencies
+cd server && npm install
 
-### Authentication
+# Install client dependencies  
+cd ../client && npm install
 
-- `POST /api/v1/signup` - Register a new user
-- `POST /api/v1/signin` - Login user
+# Install common package dependencies
+cd ../common && npm install
+```
 
-### Content Management
+3. **Environment Setup**
+```bash
+# Copy environment files
+cp server/.env.example server/.env
+cp client/.env.example client/.env
 
-- `GET /api/v1/content` - Get user's content
-- `POST /api/v1/content` - Create new content
-- `PUT /api/v1/content/:id` - Update content
-- `DELETE /api/v1/content/:id` - Delete content
+# Update with your configuration
+```
 
-### Tags
+4. **Start development servers**
+```bash
+# Terminal 1: Start server
+cd server && npm run dev
 
-- `GET /api/v1/tag` - Get all tags
-- `POST /api/v1/tag` - Create new tag
+# Terminal 2: Start client  
+cd client && npm run dev
+```
 
-### Brain Sharing
+Visit `http://localhost:5173` to see the application.
 
-- `POST /api/v1/brain/share` - Generate/toggle shareable link
-- `GET /api/v1/brain/:hash` - Access shared brain
+## 📖 Documentation
 
-## Usage
+- [Production Deployment Guide](./PRODUCTION.md)
+- [API Documentation](./server/README.md)
+- [Environment Variables](./server/.env.example)
 
-1. **Sign up** for a new account or **sign in** to existing one
-2. **Add content** by clicking the "Add Content" button
-3. **Fill in the details**: title, link, content type, and optional markdown notes
-4. **Tag your content** for better organization
-5. **Search and filter** your content on the dashboard
-6. **Share your brain** publicly using the share feature
+## 🛠️ Tech Stack
 
-## Future Roadmap
+### Frontend
+- **React 19** with TypeScript
+- **React Router** for navigation  
+- **TanStack Query** for data fetching
+- **Tailwind CSS** for styling
+- **Headless UI** for components
+- **React Hook Form** for forms
+- **Axios** for HTTP requests
 
-### 🤖 AI Integration
+### Backend  
+- **Node.js** with Express
+- **TypeScript** for type safety
+- **MongoDB** with Mongoose
+- **JWT** for authentication
+- **Passport.js** for OAuth
+- **Nodemailer** for emails
+- **Helmet** for security
+- **Rate limiting** for protection
 
-- **AI Chat Interface**: Add an intelligent assistant that can analyze and discuss your saved content
-- **Content Summarization**: Automatically generate summaries for articles and videos
-- **Smart Tagging**: AI-powered automatic tag suggestions based on content
-- **Knowledge Connections**: Discover relationships between different pieces of content
-- **Question Answering**: Ask questions about your saved content and get intelligent answers
+## 🔧 Configuration
 
-## License
+### Required Environment Variables
 
-This project is licensed under the MIT License.
+#### Server (.env)
+```bash
+NODE_ENV=development
+JWT_SECRET=your-jwt-secret
+MONGODB_URI=mongodb://localhost:27017/secondbrain
+CLIENT_URL=http://localhost:5173
+```
 
----
+#### Client (.env)  
+```bash
+VITE_API_URL=http://localhost:3001/api/v1
+```
 
-**Built with ❤️ by [Venkat](https://github.com/venkatkommina)**
+See `.env.example` files for complete configuration options.
+
+## 🚀 Production Deployment
+
+See [PRODUCTION.md](./PRODUCTION.md) for detailed production deployment instructions.
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Built with modern web technologies
+- Inspired by second brain methodology
+- Uses open source libraries and tools

@@ -14,6 +14,9 @@ import { SignupPage } from "./pages/SignupPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { AddContentPage } from "./pages/AddContentPage";
 import SharedBrain from "./pages/SharedBrain";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
+import OAuthCallbackPage from "./pages/OAuthCallbackPage";
 import { useAuth } from "./contexts/AuthContext";
 
 // Create a React Query client
@@ -44,6 +47,9 @@ function AppRoutes() {
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="signup" element={<SignupPage />} />
+        <Route path="forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="reset-password/:token" element={<ResetPasswordPage />} />
+        <Route path="auth/callback" element={<OAuthCallbackPage />} />
         <Route
           path="dashboard"
           element={

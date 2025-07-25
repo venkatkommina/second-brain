@@ -1,8 +1,12 @@
 import { Fragment, useState, useEffect } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { XMarkIcon } from "@heroicons/react/24/outline";
 import api from "../lib/axios";
 import toast from "react-hot-toast";
+import { Button } from "./ui/Button";
+import { Input } from "./ui/Input";
+import { Badge } from "./ui/Badge";
 import { MarkdownEditor } from "./MarkdownEditor";
 
 interface Tag {
@@ -98,11 +102,19 @@ export default function EditContentModal({
     updateContent.mutate();
   };
 
+  const toggleTag = (tagId: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(tagId)
+        ? prev.filter((id) => id !== tagId)
+        : [...prev, tagId]
+    );
+  };
+
   if (!content) return null;
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-10" onClose={handleClose}>
+      <Dialog as="div" className="relative z-50" onClose={handleClose}>
         <Transition.Child
           as={Fragment}
           enter="ease-out duration-300"
@@ -112,11 +124,14 @@ export default function EditContentModal({
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-black/50" />
+          <div
+            className="fixed inset-0"
+            style={{ backgroundColor: "hsl(var(--background) / 0.8)" }}
+          />
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4 text-center">
+          <div className="flex min-h-full items-center justify-center p-4">
             <Transition.Child
               as={Fragment}
               enter="ease-out duration-300"
@@ -126,152 +141,216 @@ export default function EditContentModal({
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 border border-border p-6 text-left align-middle shadow-xl transition-all">
-                <Dialog.Title
-                  as="h3"
-                  className="text-lg font-medium leading-6 text-gray-900 dark:text-white"
+              <Dialog.Panel
+                className="w-full max-w-2xl transform overflow-hidden rounded-lg border shadow-xl transition-all"
+                style={{
+                  backgroundColor: "hsl(var(--card))",
+                  borderColor: "hsl(var(--border))",
+                }}
+              >
+                {/* Header */}
+                <div
+                  className="flex items-center justify-between p-6 border-b"
+                  style={{ borderColor: "hsl(var(--border))" }}
                 >
-                  Edit Content
-                </Dialog.Title>
-                <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-                  <div>
-                    <label
-                      htmlFor="title"
-                      className="block text-sm font-medium text-gray-700 dark:text-gray-200"
-                    >
-                      Title
-                    </label>
-                    <input
-                      type="text"
-                      id="title"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                      required
-                    />
-                  </div>
+                  <Dialog.Title
+                    as="h3"
+                    className="text-lg font-semibold"
+                    style={{ color: "hsl(var(--foreground))" }}
+                  >
+                    Edit Content
+                  </Dialog.Title>
+                  <button
+                    onClick={handleClose}
+                    className="rounded-md p-2 hover:opacity-70 transition-opacity"
+                    style={{ color: "hsl(var(--muted-foreground))" }}
+                  >
+                    <XMarkIcon className="h-5 w-5" />
+                  </button>
+                </div>
 
-                  <div>
-                    <label
-                      htmlFor="link"
-                      className="block text-sm font-medium text-gray-700 dark:text-gray-200"
-                    >
-                      Link
-                    </label>
-                    <input
-                      type="url"
-                      id="link"
-                      value={link}
-                      onChange={(e) => setLink(e.target.value)}
-                      className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="type"
-                      className="block text-sm font-medium text-gray-700 dark:text-gray-200"
-                    >
-                      Type
-                    </label>
-                    <select
-                      id="type"
-                      value={type}
-                      onChange={(e) => setType(e.target.value)}
-                      className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                    >
-                      <option value="article">Article</option>
-                      <option value="video">Video</option>
-                      <option value="image">Image</option>
-                      <option value="audio">Audio</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                      Notes (Markdown supported)
-                    </label>
-                    <MarkdownEditor
-                      value={notes}
-                      onChange={setNotes}
-                      height={200}
-                    />
-                  </div>
-
-                  <div>
-                    <div className="flex items-center">
-                      <input
-                        type="checkbox"
-                        id="isShared"
-                        checked={isShared}
-                        onChange={(e) => setIsShared(e.target.checked)}
-                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                      />
+                {/* Content */}
+                <div className="p-6">
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* Title */}
+                    <div>
                       <label
-                        htmlFor="isShared"
-                        className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-200"
+                        htmlFor="title"
+                        className="block mb-2 font-medium"
+                        style={{ color: "hsl(var(--foreground))" }}
                       >
-                        Share this content publicly
+                        Title
                       </label>
+                      <Input
+                        id="title"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        placeholder="Enter a descriptive title"
+                        required
+                      />
                     </div>
-                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                      When enabled, this content will be visible in your shared
-                      brain
-                    </p>
-                  </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
-                      Tags
-                    </label>
-                    <div className="mt-2 space-y-2">
-                      {tags.map((tag) => (
-                        <label
-                          key={tag._id}
-                          className="inline-flex items-center mr-4"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={selectedTags.includes(tag._id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedTags([...selectedTags, tag._id]);
-                              } else {
-                                setSelectedTags(
-                                  selectedTags.filter((id) => id !== tag._id)
-                                );
-                              }
+                    {/* Link */}
+                    <div>
+                      <label
+                        htmlFor="link"
+                        className="block mb-2 font-medium"
+                        style={{ color: "hsl(var(--foreground))" }}
+                      >
+                        Link
+                      </label>
+                      <Input
+                        id="link"
+                        type="url"
+                        value={link}
+                        onChange={(e) => setLink(e.target.value)}
+                        placeholder="https://example.com"
+                        required
+                      />
+                    </div>
+
+                    {/* Content Type */}
+                    <div>
+                      <label
+                        className="block mb-2 font-medium"
+                        style={{ color: "hsl(var(--foreground))" }}
+                      >
+                        Content Type
+                      </label>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {[
+                          { value: "article", label: "📄 Article" },
+                          { value: "video", label: "🎬 Video" },
+                          { value: "image", label: "🖼️ Image" },
+                          { value: "audio", label: "🎵 Audio" },
+                        ].map((contentType) => (
+                          <button
+                            key={contentType.value}
+                            type="button"
+                            onClick={() => setType(contentType.value)}
+                            className={`px-4 py-2 rounded-md border transition-colors ${
+                              type === contentType.value
+                                ? "border-[hsl(var(--primary))]"
+                                : "border-[hsl(var(--border))]"
+                            }`}
+                            style={{
+                              backgroundColor:
+                                type === contentType.value
+                                  ? "hsl(var(--primary))"
+                                  : "hsl(var(--background))",
+                              color:
+                                type === contentType.value
+                                  ? "hsl(var(--primary-foreground))"
+                                  : "hsl(var(--foreground))",
                             }}
-                            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                          />
-                          <span className="ml-2 text-sm text-gray-700 dark:text-gray-200">
-                            {tag.title}
-                          </span>
-                        </label>
-                      ))}
+                          >
+                            {contentType.label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="mt-6 flex justify-end space-x-3">
-                    <button
-                      type="button"
-                      onClick={handleClose}
-                      className="rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                    {/* Notes */}
+                    <div>
+                      <label
+                        className="block mb-2 font-medium"
+                        style={{ color: "hsl(var(--foreground))" }}
+                      >
+                        Notes{" "}
+                        <span
+                          className="font-normal"
+                          style={{ color: "hsl(var(--muted-foreground))" }}
+                        >
+                          (Optional)
+                        </span>
+                      </label>
+                      <MarkdownEditor
+                        value={notes}
+                        onChange={setNotes}
+                        placeholder="Add your notes in Markdown format..."
+                        height={200}
+                      />
+                    </div>
+
+                    {/* Share Toggle */}
+                    <div
+                      className="rounded-lg border p-4"
+                      style={{
+                        backgroundColor: "hsl(var(--muted) / 0.3)",
+                        borderColor: "hsl(var(--border))",
+                      }}
                     >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={updateContent.isPending}
-                      className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
-                    >
-                      {updateContent.isPending
-                        ? "Updating..."
-                        : "Update Content"}
-                    </button>
-                  </div>
-                </form>
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          id="isShared"
+                          checked={isShared}
+                          onChange={(e) => setIsShared(e.target.checked)}
+                          className="h-4 w-4 rounded focus:ring-2"
+                          style={{
+                            accentColor: "hsl(var(--primary))",
+                          }}
+                        />
+                        <label
+                          htmlFor="isShared"
+                          className="ml-3 font-medium"
+                          style={{ color: "hsl(var(--foreground))" }}
+                        >
+                          Share this content publicly
+                        </label>
+                      </div>
+                      <p
+                        className="mt-1 text-sm ml-7"
+                        style={{ color: "hsl(var(--muted-foreground))" }}
+                      >
+                        When enabled, this content will be visible in your
+                        shared brain
+                      </p>
+                    </div>
+
+                    {/* Tags */}
+                    <div>
+                      <label
+                        className="block mb-3 font-medium"
+                        style={{ color: "hsl(var(--foreground))" }}
+                      >
+                        Tags
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {tags.map((tag) => (
+                          <Badge
+                            key={tag._id}
+                            variant={
+                              selectedTags.includes(tag._id)
+                                ? "default"
+                                : "outline"
+                            }
+                            className="cursor-pointer transition-all hover:scale-105"
+                            onClick={() => toggleTag(tag._id)}
+                          >
+                            {tag.title}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex justify-end space-x-3 pt-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleClose}
+                      >
+                        Cancel
+                      </Button>
+                      <Button type="submit" isLoading={updateContent.isPending}>
+                        {updateContent.isPending
+                          ? "Updating..."
+                          : "Update Content"}
+                      </Button>
+                    </div>
+                  </form>
+                </div>
               </Dialog.Panel>
             </Transition.Child>
           </div>

@@ -13,6 +13,8 @@ import crypto from "crypto";
 import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
+import passport from "./passport";
+import { sendPasswordResetEmail, sendWelcomeEmail } from "./emailService";
 
 interface AuthenticatedRequest extends Request {
   email?: string;
@@ -25,7 +27,7 @@ router.use(helmet());
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 5 * 60 * 1000, // 5 minutes
   max: 100, // limit each IP to 100 requests per windowMs
   message: "Too many requests from this IP, please try again later.",
   standardHeaders: true,
@@ -36,8 +38,8 @@ router.use(limiter);
 
 // Stricter rate limiting for auth endpoints
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit each IP to 5 auth requests per windowMs
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: process.env.NODE_ENV === "production" ? 5 : 1000, // 5 in production, 1000 in development (effectively unlimited)
   message: "Too many authentication attempts, please try again later.",
   standardHeaders: true,
   legacyHeaders: false,
@@ -47,7 +49,7 @@ const authLimiter = rateLimit({
 const getAllowedOrigins = () => {
   const corsOrigins = process.env.CORS_ORIGINS;
   if (corsOrigins) {
-    return corsOrigins.split(',').map(origin => origin.trim());
+    return corsOrigins.split(",").map((origin) => origin.trim());
   }
   // Default to localhost for development
   return [
@@ -96,6 +98,27 @@ router.get("/", (req, res) => {
   res.send("Hello world!");
 });
 
+// Get current user info
+router.get(
+  "/me",
+  authenticateToken,
+  async (req: AuthenticatedRequest, res): Promise<any> => {
+    try {
+      const user = await User.findOne({ email: req.email });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.json({
+        id: user._id,
+        email: user.email,
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Server error" });
+    }
+  }
+);
+
 router.post("/signup", authLimiter, async (req, res): Promise<any> => {
   try {
     const user = req.body;
@@ -115,8 +138,17 @@ router.post("/signup", authLimiter, async (req, res): Promise<any> => {
     }
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newUser = new User({ email, password: hashedPassword });
+    const newUser = new User({
+      email,
+      password: hashedPassword,
+      authProvider: "local",
+    });
     await newUser.save();
+
+    // Send welcome email (non-blocking)
+    sendWelcomeEmail(email).catch((err) =>
+      console.error("Failed to send welcome email:", err)
+    );
 
     res
       .status(201)
@@ -136,6 +168,13 @@ router.post("/signin", authLimiter, async (req, res): Promise<any> => {
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(403).json({ message: "Invalid credentials" });
+    }
+
+    // Check if user has a password (local auth) or uses OAuth
+    if (!user.password) {
+      return res.status(403).json({
+        message: "Please sign in with Google or reset your password",
+      });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -159,6 +198,196 @@ router.post("/signin", authLimiter, async (req, res): Promise<any> => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
+
+// Password Reset Routes
+router.post("/forgot-password", authLimiter, async (req, res): Promise<any> => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      // Don't reveal if user exists or not for security
+      return res.status(200).json({
+        message:
+          "If an account with that email exists, we've sent a password reset link",
+      });
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    user.resetPasswordToken = crypto
+      .createHash("sha256")
+      .update(resetToken)
+      .digest("hex");
+    user.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    await user.save();
+
+    // Send email
+    try {
+      await sendPasswordResetEmail(email, resetToken);
+    } catch (emailError) {
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpires = undefined;
+      await user.save();
+      return res.status(500).json({ message: "Failed to send reset email" });
+    }
+
+    res.status(200).json({
+      message:
+        "If an account with that email exists, we've sent a password reset link",
+    });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error(error.message);
+    }
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// Password reset - verify token
+router.get("/verify-reset-token/:token", async (req, res): Promise<any> => {
+  try {
+    const { token } = req.params;
+
+    // Hash the token to compare with stored hash (same as in forgot-password)
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    const user = await User.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpires: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res
+        .status(400)
+        .json({ message: "Invalid or expired reset token" });
+    }
+
+    res.json({ message: "Token is valid" });
+  } catch (error) {
+    console.error("Token verification error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.post("/reset-password", authLimiter, async (req, res): Promise<any> => {
+  try {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      return res
+        .status(400)
+        .json({ message: "Token and password are required" });
+    }
+
+    if (password.length < 8) {
+      return res
+        .status(400)
+        .json({ message: "Password must be at least 8 characters" });
+    }
+
+    // Hash the token to compare with stored hash
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    const user = await User.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpires: { $gt: new Date() },
+    });
+
+    if (!user) {
+      return res
+        .status(400)
+        .json({ message: "Invalid or expired reset token" });
+    }
+
+    // Update password
+    const hashedPassword = await bcrypt.hash(password, 10);
+    user.password = hashedPassword;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    res.status(200).json({ message: "Password reset successful" });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error(error.message);
+    }
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// Check if OAuth is enabled
+const isOAuthEnabled =
+  process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET;
+
+// Google OAuth Routes (only if OAuth is enabled)
+if (isOAuthEnabled) {
+  if (process.env.NODE_ENV !== "production") {
+    console.log("✅ Google OAuth routes enabled");
+  }
+
+  router.get(
+    "/auth/google",
+    passport.authenticate("google", { scope: ["profile", "email"] })
+  );
+
+  router.get(
+    "/auth/google/callback",
+    passport.authenticate("google", { session: false }),
+    async (req: any, res): Promise<any> => {
+      try {
+        const user = req.user;
+
+        if (!process.env.JWT_SECRET) {
+          throw new Error("JWT_SECRET is not defined in environment variables");
+        }
+
+        const token = jwt.sign(
+          { email: user.email, id: user._id },
+          process.env.JWT_SECRET,
+          { expiresIn: "7d" }
+        );
+
+        // Redirect to frontend with token
+        const frontendUrl = process.env.CLIENT_URL || "http://localhost:5173";
+        res.redirect(`${frontendUrl}/auth/callback?token=${token}`);
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          console.error(error.message);
+        }
+        const frontendUrl = process.env.CLIENT_URL || "http://localhost:5173";
+        res.redirect(
+          `${frontendUrl}/login?error=${encodeURIComponent(
+            "Authentication failed"
+          )}`
+        );
+      }
+    }
+  );
+} else {
+  if (process.env.NODE_ENV !== "production") {
+    console.warn(
+      "⚠️  Google OAuth routes disabled - credentials not configured"
+    );
+  }
+
+  // Provide fallback routes that return error
+  router.get("/auth/google", (req, res) => {
+    res
+      .status(503)
+      .json({ message: "Google OAuth is not configured on this server" });
+  });
+
+  router.get("/auth/google/callback", (req, res) => {
+    res
+      .status(503)
+      .json({ message: "Google OAuth is not configured on this server" });
+  });
+}
 
 router.post(
   "/tag",

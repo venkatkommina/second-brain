@@ -16,6 +16,7 @@ import {
 } from "../components/ui/Card";
 import { AxiosError } from "axios";
 import toast from "react-hot-toast";
+import GoogleAuthButton from "../components/GoogleAuthButton";
 
 // Using the same validation schema from the common package
 const passwordRegex =
@@ -123,6 +124,19 @@ export function SignupPage() {
             <Button type="submit" className="w-full" isLoading={isLoading}>
               Create Account
             </Button>
+            
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  Or continue with
+                </span>
+              </div>
+            </div>
+            
+            <GoogleAuthButton mode="signup" />
           </form>
         </CardContent>
         <CardFooter className="flex flex-col space-y-2 border-t pt-6">

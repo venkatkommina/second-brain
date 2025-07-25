@@ -16,6 +16,7 @@ import {
 } from "../components/ui/Card";
 import { AxiosError } from "axios";
 import toast from "react-hot-toast";
+import GoogleAuthButton from "../components/GoogleAuthButton";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -86,6 +87,14 @@ export function LoginPage() {
                 error={errors.password?.message}
                 {...register("password")}
               />
+              <div className="text-right">
+                <Link
+                  to="/forgot-password"
+                  className="text-sm text-primary hover:text-primary/90 underline underline-offset-4"
+                >
+                  Forgot password?
+                </Link>
+              </div>
             </div>
             {error && (
               <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-md">
@@ -95,6 +104,19 @@ export function LoginPage() {
             <Button type="submit" className="w-full" isLoading={isLoading}>
               Login
             </Button>
+            
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  Or continue with
+                </span>
+              </div>
+            </div>
+            
+            <GoogleAuthButton mode="signin" />
           </form>
         </CardContent>
         <CardFooter className="flex flex-col space-y-2 border-t pt-6">

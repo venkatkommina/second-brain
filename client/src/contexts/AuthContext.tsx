@@ -12,6 +12,7 @@ type AuthContextType = {
   token: string | null;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithToken: (token: string) => Promise<void>;
   signup: (email: string, password: string) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
@@ -27,11 +28,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
-  // Auto-login if token exists
+  // Auto-login if token exists (only on initial load)
   useEffect(() => {
     const verifyToken = async () => {
-      if (!token) return;
+      if (!token || isInitialized) return;
 
       setIsLoading(true);
       try {
@@ -46,11 +48,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         logout();
       } finally {
         setIsLoading(false);
+        setIsInitialized(true);
       }
     };
 
     verifyToken();
-  }, [token]);
+  }, [token, isInitialized]);
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     setError(null);
@@ -71,6 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         id: userResponse.data.id,
         email: userResponse.data.email,
       });
+      setIsInitialized(true); // Mark as initialized to prevent useEffect call
     } catch (err) {
       const axiosError = err as AxiosError<{ message: string }>;
       let errorMessage = "Login failed";
@@ -86,6 +90,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loginWithToken = async (newToken: string) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      localStorage.setItem("token", newToken);
+      setToken(newToken);
+
+      // Get user info from /me endpoint
+      const userResponse = await api.get("/me");
+      setUser({
+        id: userResponse.data.id,
+        email: userResponse.data.email,
+      });
+      setIsInitialized(true); // Mark as initialized to prevent useEffect call
+    } catch (err) {
+      const axiosError = err as AxiosError<{ message: string }>;
+      let errorMessage = "Token authentication failed";
+
+      if (axiosError.response?.data?.message) {
+        errorMessage = axiosError.response.data.message;
+      } else if (axiosError.message) {
+        errorMessage = axiosError.message;
+      }
+
+      setError(errorMessage);
+      logout(); // Clear invalid token
       throw new Error(errorMessage);
     } finally {
       setIsLoading(false);
@@ -133,6 +170,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem("token");
     setToken(null);
     setUser(null);
+    setIsInitialized(false);
   };
 
   return (
@@ -142,6 +180,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         token,
         isAuthenticated: !!token,
         login,
+        loginWithToken,
         signup,
         logout,
         isLoading,
