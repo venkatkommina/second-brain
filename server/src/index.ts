@@ -9,10 +9,7 @@ const app = express();
 // Parse JSON bodies
 app.use(express.json());
 
-app.use(cors({
-  origin: ["http://localhost:5173", "http://localhost:3000", "http://localhost:5174"], // allow Vite frontend and other common dev ports
-  credentials: true, // if you're using cookies or auth headers
-}));
+// CORS is now handled in routes.ts with environment variables
 
 app.use("/api/v1", router);
 

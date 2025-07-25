@@ -11,6 +11,8 @@ import {
 
 import crypto from "crypto";
 import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 
 interface AuthenticatedRequest extends Request {
   email?: string;
@@ -18,13 +20,46 @@ interface AuthenticatedRequest extends Request {
 
 const router = express.Router();
 
+// Security middleware
+router.use(helmet());
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: "Too many requests from this IP, please try again later.",
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+router.use(limiter);
+
+// Stricter rate limiting for auth endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // limit each IP to 5 auth requests per windowMs
+  message: "Too many authentication attempts, please try again later.",
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Get allowed origins from environment variable
+const getAllowedOrigins = () => {
+  const corsOrigins = process.env.CORS_ORIGINS;
+  if (corsOrigins) {
+    return corsOrigins.split(',').map(origin => origin.trim());
+  }
+  // Default to localhost for development
+  return [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://localhost:5174",
+  ];
+};
+
 router.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "http://localhost:3000",
-      "http://localhost:5174",
-    ], // allow Vite frontend and other common dev ports
+    origin: getAllowedOrigins(),
     credentials: true, // if you're using cookies or auth headers
   })
 );
@@ -61,7 +96,7 @@ router.get("/", (req, res) => {
   res.send("Hello world!");
 });
 
-router.post("/signup", async (req, res): Promise<any> => {
+router.post("/signup", authLimiter, async (req, res): Promise<any> => {
   try {
     const user = req.body;
 
@@ -94,7 +129,7 @@ router.post("/signup", async (req, res): Promise<any> => {
   }
 });
 
-router.post("/signin", async (req, res): Promise<any> => {
+router.post("/signin", authLimiter, async (req, res): Promise<any> => {
   try {
     const { email, password } = req.body;
 
