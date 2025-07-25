@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../lib/axios';
 import toast from 'react-hot-toast';
@@ -12,7 +12,14 @@ interface Content {
   title: string;
   link: string;
   type: string;
-  tags: string[];
+  tags: Array<{
+    _id: string;
+    title: string;
+    userId?: string;
+    isGlobal?: boolean;
+  }>;
+  notes?: string;
+  isShared?: boolean;
 }
 
 export default function Dashboard() {
@@ -20,43 +27,45 @@ export default function Dashboard() {
   const { logout } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data: contents, isLoading } = useQuery('contents', async () => {
-    const response = await api.get('/content');
-    return response.data;
+  const { data: contents, isLoading } = useQuery({
+    queryKey: ['contents'],
+    queryFn: async () => {
+      const response = await api.get('/content');
+      return response.data;
+    }
   });
 
-  const { data: tags } = useQuery('tags', async () => {
-    const response = await api.get('/tag');
-    return response.data;
+  const { data: tags } = useQuery({
+    queryKey: ['tags'],
+    queryFn: async () => {
+      const response = await api.get('/tag');
+      return response.data;
+    }
   });
 
-  const shareMutation = useMutation(
-    async () => {
+  const shareMutation = useMutation({
+    mutationFn: async () => {
       const response = await api.post('/brain/share');
       return response.data;
     },
-    {
-      onSuccess: (data) => {
-        toast.success(data.message);
+    onSuccess: (data: { message: string; link?: string }) => {
+      toast.success(data.message);
         if (data.link) {
           navigator.clipboard.writeText(data.link);
           toast.success('Share link copied to clipboard!');
         }
       },
-    }
-  );
+  });
 
-  const deleteContent = useMutation(
-    async (contentId: string) => {
+  const deleteContent = useMutation({
+    mutationFn: async (contentId: string) => {
       await api.delete(`/content/${contentId}`);
     },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries('contents');
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contents'] });
         toast.success('Content deleted successfully');
       },
-    }
-  );
+  });
 
   if (isLoading) {
     return <div>Loading...</div>;
