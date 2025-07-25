@@ -6,7 +6,16 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../components/ui/Card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from "../components/ui/Card";
+import { AxiosError } from "axios";
+import toast from "react-hot-toast";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -35,13 +44,16 @@ export function LoginPage() {
 
     try {
       await login(data.email, data.password);
+      toast.success("Login successful!");
       navigate("/dashboard");
     } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Failed to login. Please try again.");
-      }
+      const axiosError = err as AxiosError<{ message: string }>;
+      const errorMessage =
+        axiosError.response?.data?.message ||
+        axiosError.message ||
+        "Failed to login. Please try again.";
+      setError(errorMessage);
+      toast.error(errorMessage);
       setIsLoading(false);
     }
   };
@@ -80,11 +92,7 @@ export function LoginPage() {
                 <p className="text-sm text-destructive">{error}</p>
               </div>
             )}
-            <Button
-              type="submit"
-              className="w-full"
-              isLoading={isLoading}
-            >
+            <Button type="submit" className="w-full" isLoading={isLoading}>
               Login
             </Button>
           </form>
@@ -103,4 +111,4 @@ export function LoginPage() {
       </Card>
     </div>
   );
-} 
+}

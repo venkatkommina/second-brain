@@ -6,26 +6,38 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../components/ui/Card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from "../components/ui/Card";
+import { AxiosError } from "axios";
+import toast from "react-hot-toast";
 
 // Using the same validation schema from the common package
-const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,20}$/;
+const passwordRegex =
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,20}$/;
 
-const signupSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
-  password: z
-    .string()
-    .min(8, "Password must be at least 8 characters")
-    .max(20, "Password must be less than 20 characters")
-    .regex(passwordRegex, {
-      message:
-        "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character",
-    }),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"],
-});
+const signupSchema = z
+  .object({
+    email: z.string().email("Please enter a valid email address"),
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .max(20, "Password must be less than 20 characters")
+      .regex(passwordRegex, {
+        message:
+          "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character",
+      }),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
 
 type SignupFormData = z.infer<typeof signupSchema>;
 
@@ -49,13 +61,16 @@ export function SignupPage() {
 
     try {
       await signup(data.email, data.password);
+      toast.success("Account created successfully!");
       navigate("/dashboard");
     } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Failed to create account. Please try again.");
-      }
+      const axiosError = err as AxiosError<{ message: string }>;
+      const errorMessage =
+        axiosError.response?.data?.message ||
+        axiosError.message ||
+        "Failed to create account. Please try again.";
+      setError(errorMessage);
+      toast.error(errorMessage);
       setIsLoading(false);
     }
   };
@@ -64,7 +79,9 @@ export function SignupPage() {
     <div className="flex items-center justify-center min-h-[80vh]">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
+          <CardTitle className="text-2xl font-bold">
+            Create an account
+          </CardTitle>
           <CardDescription>
             Enter your email and create a password to get started
           </CardDescription>
@@ -103,11 +120,7 @@ export function SignupPage() {
                 <p className="text-sm text-destructive">{error}</p>
               </div>
             )}
-            <Button
-              type="submit"
-              className="w-full"
-              isLoading={isLoading}
-            >
+            <Button type="submit" className="w-full" isLoading={isLoading}>
               Create Account
             </Button>
           </form>
@@ -126,4 +139,4 @@ export function SignupPage() {
       </Card>
     </div>
   );
-} 
+}
