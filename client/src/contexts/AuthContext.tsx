@@ -33,18 +33,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const verifyToken = async () => {
       if (!token) return;
 
+      setIsLoading(true);
       try {
-        // You can add an endpoint to verify the token and get user info
-        // For now, we'll just assume the token is valid
-        setUser({ email: "user@example.com", id: "1" }); // Replace with actual user data
+        // Use the /me endpoint to verify token and get user info
+        const response = await api.get("/me");
+        setUser({
+          id: response.data.id,
+          email: response.data.email,
+        });
       } catch {
+        // Token is invalid, clear it
         logout();
+      } finally {
+        setIsLoading(false);
       }
     };
 
     verifyToken();
   }, [token]);
-
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     setError(null);
@@ -59,8 +65,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem("token", token);
       setToken(token);
 
-      // Set user info (you might need to fetch user details separately)
-      setUser({ email, id: "1" }); // Replace with actual user data
+      // Get user info from /me endpoint
+      const userResponse = await api.get("/me");
+      setUser({
+        id: userResponse.data.id,
+        email: userResponse.data.email,
+      });
     } catch (err) {
       const axiosError = err as AxiosError<{ message: string }>;
       let errorMessage = "Login failed";
