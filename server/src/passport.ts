@@ -9,16 +9,25 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     console.log("✅ Configuring Google OAuth strategy");
   }
 
+  const callbackURL =
+    process.env.NODE_ENV === "production"
+      ? `${process.env.SERVER_URL}/api/v1/auth/google/callback`
+      : "http://localhost:3001/api/v1/auth/google/callback";
+
+  console.log("=== OAUTH DEBUG ===");
+  console.log("NODE_ENV:", process.env.NODE_ENV);
+  console.log("SERVER_URL:", process.env.SERVER_URL);
+  console.log("Callback URL:", callbackURL);
+  console.log("Client ID:", process.env.GOOGLE_CLIENT_ID);
+  console.log("==================");
+
   // Google OAuth Strategy
   passport.use(
     new GoogleStrategy(
       {
         clientID: process.env.GOOGLE_CLIENT_ID,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        callbackURL:
-          process.env.NODE_ENV === "production"
-            ? `${process.env.SERVER_URL}/api/v1/auth/google/callback`
-            : "http://localhost:3001/api/v1/auth/google/callback",
+        callbackURL,
       },
       async (accessToken, refreshToken, profile, done) => {
         try {
