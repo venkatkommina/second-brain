@@ -8,6 +8,8 @@ import passport from "./passport";
 const port = process.env.PORT || 3001;
 const app = express();
 
+app.set("trust proxy", 1);
+
 // Parse JSON bodies
 app.use(express.json());
 
