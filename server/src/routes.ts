@@ -25,27 +25,28 @@ const router = express.Router();
 // Security middleware
 router.use(helmet());
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 5 * 60 * 1000, // 5 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: "Too many requests from this IP, please try again later.",
-  standardHeaders: true,
-  legacyHeaders: false,
-  skip: () => false, // Don't skip any requests
-});
+// Rate limiting - temporarily disabled to fix OAuth issue
+// const limiter = rateLimit({
+//   windowMs: 5 * 60 * 1000, // 5 minutes
+//   max: 100, // limit each IP to 100 requests per windowMs
+//   message: "Too many requests from this IP, please try again later.",
+//   standardHeaders: true,
+//   legacyHeaders: false,
+// });
 
-router.use(limiter);
+// router.use(limiter);
 
-// Stricter rate limiting for auth endpoints
-const authLimiter = rateLimit({
-  windowMs: 5 * 60 * 1000, // 5 minutes
-  max: process.env.NODE_ENV === "production" ? 5 : 1000, // 5 in production, 1000 in development (effectively unlimited)
-  message: "Too many authentication attempts, please try again later.",
-  standardHeaders: true,
-  legacyHeaders: false,
-  skip: () => false, // Don't skip any requests
-});
+// Stricter rate limiting for auth endpoints - temporarily disabled
+// const authLimiter = rateLimit({
+//   windowMs: 5 * 60 * 1000, // 5 minutes
+//   max: process.env.NODE_ENV === "production" ? 5 : 1000, // 5 in production, 1000 in development (effectively unlimited)
+//   message: "Too many authentication attempts, please try again later.",
+//   standardHeaders: true,
+//   legacyHeaders: false,
+// });
+
+// Temporary no-op function to replace authLimiter
+const authLimiter = (req: any, res: any, next: any) => next();
 
 // Get allowed origins from environment variable
 const getAllowedOrigins = () => {

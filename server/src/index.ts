@@ -8,7 +8,9 @@ import passport from "./passport";
 const port = process.env.PORT || 3001;
 const app = express();
 
-app.set("trust proxy", 1);
+// Trust proxy settings - MUST be before any middleware that uses IP detection
+app.set("trust proxy", true); // Trust all proxies
+app.enable("trust proxy"); // Enable trust proxy
 
 // Parse JSON bodies
 app.use(express.json());
