@@ -30,11 +30,19 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
         callbackURL,
       },
       async (accessToken, refreshToken, profile, done) => {
+        console.log("=== GOOGLE STRATEGY CALLBACK ===");
+        console.log("Access Token received:", !!accessToken);
+        console.log("Profile ID:", profile.id);
+        console.log("Profile email:", profile.emails?.[0]?.value);
+        console.log("Profile name:", profile.displayName);
+        console.log("================================");
+
         try {
           // Check if user already exists with this Google ID
           let user = await User.findOne({ googleId: profile.id });
 
           if (user) {
+            console.log("Found existing user by Google ID:", user._id);
             return done(null, user);
           }
 
@@ -42,6 +50,10 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
           user = await User.findOne({ email: profile.emails?.[0]?.value });
 
           if (user) {
+            console.log(
+              "Found existing user by email, linking Google account:",
+              user._id
+            );
             // Link existing account with Google
             user.googleId = profile.id;
             user.authProvider = "google";
@@ -54,6 +66,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
           }
 
           // Create new user
+          console.log("Creating new user for Google account");
           const newUser = new User({
             googleId: profile.id,
             email: profile.emails?.[0]?.value,
@@ -65,8 +78,12 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
           });
 
           await newUser.save();
+          console.log("New user created successfully:", newUser._id);
           return done(null, newUser);
         } catch (error) {
+          console.error("=== GOOGLE STRATEGY ERROR ===");
+          console.error("Error in Google strategy:", error);
+          console.error("==============================");
           return done(error, false);
         }
       }
