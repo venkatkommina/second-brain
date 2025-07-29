@@ -32,6 +32,7 @@ const limiter = rateLimit({
   message: "Too many requests from this IP, please try again later.",
   standardHeaders: true,
   legacyHeaders: false,
+  skip: () => false, // Don't skip any requests
 });
 
 router.use(limiter);
@@ -43,6 +44,7 @@ const authLimiter = rateLimit({
   message: "Too many authentication attempts, please try again later.",
   standardHeaders: true,
   legacyHeaders: false,
+  skip: () => false, // Don't skip any requests
 });
 
 // Get allowed origins from environment variable
