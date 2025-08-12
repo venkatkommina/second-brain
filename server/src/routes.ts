@@ -12,7 +12,6 @@ import {
 import crypto from "crypto";
 import cors from "cors";
 import helmet from "helmet";
-// import rateLimit from "express-rate-limit"; // Temporarily removed for OAuth debugging
 import passport from "./passport";
 import { sendPasswordResetEmail, sendWelcomeEmail } from "./emailService";
 
@@ -22,31 +21,8 @@ interface AuthenticatedRequest extends Request {
 
 const router = express.Router();
 
-// Security middleware - temporarily simplified for OAuth debugging
-// router.use(helmet());
-
-// Rate limiting - temporarily disabled to fix OAuth issue
-// const limiter = rateLimit({
-//   windowMs: 5 * 60 * 1000, // 5 minutes
-//   max: 100, // limit each IP to 100 requests per windowMs
-//   message: "Too many requests from this IP, please try again later.",
-//   standardHeaders: true,
-//   legacyHeaders: false,
-// });
-
-// router.use(limiter);
-
-// Stricter rate limiting for auth endpoints - temporarily disabled
-// const authLimiter = rateLimit({
-//   windowMs: 5 * 60 * 1000, // 5 minutes
-//   max: process.env.NODE_ENV === "production" ? 5 : 1000, // 5 in production, 1000 in development (effectively unlimited)
-//   message: "Too many authentication attempts, please try again later.",
-//   standardHeaders: true,
-//   legacyHeaders: false,
-// });
-
-// Temporary no-op function to replace authLimiter
-const authLimiter = (req: any, res: any, next: any) => next();
+// Security middleware
+router.use(helmet());
 
 // Get allowed origins from environment variable
 const getAllowedOrigins = () => {
@@ -122,7 +98,7 @@ router.get(
   }
 );
 
-router.post("/signup", authLimiter, async (req, res): Promise<any> => {
+router.post("/signup", async (req, res): Promise<any> => {
   try {
     const user = req.body;
 
@@ -164,7 +140,7 @@ router.post("/signup", authLimiter, async (req, res): Promise<any> => {
   }
 });
 
-router.post("/signin", authLimiter, async (req, res): Promise<any> => {
+router.post("/signin", async (req, res): Promise<any> => {
   try {
     const { email, password } = req.body;
 
@@ -203,7 +179,7 @@ router.post("/signin", authLimiter, async (req, res): Promise<any> => {
 });
 
 // Password Reset Routes
-router.post("/forgot-password", authLimiter, async (req, res): Promise<any> => {
+router.post("/forgot-password", async (req, res): Promise<any> => {
   try {
     const { email } = req.body;
 
@@ -277,7 +253,7 @@ router.get("/verify-reset-token/:token", async (req, res): Promise<any> => {
   }
 });
 
-router.post("/reset-password", authLimiter, async (req, res): Promise<any> => {
+router.post("/reset-password", async (req, res): Promise<any> => {
   try {
     const { token, password } = req.body;
 
@@ -329,10 +305,6 @@ const isOAuthEnabled =
 
 // Google OAuth Routes (only if OAuth is enabled)
 if (isOAuthEnabled) {
-  if (process.env.NODE_ENV !== "production") {
-    console.log("✅ Google OAuth routes enabled");
-  }
-
   router.get(
     "/auth/google",
     passport.authenticate("google", { scope: ["profile", "email"] })
@@ -341,24 +313,11 @@ if (isOAuthEnabled) {
   router.get(
     "/auth/google/callback",
     (req: any, res: any, next: any) => {
-      console.log("=== OAUTH CALLBACK DEBUG ===");
-      console.log("Request URL:", req.url);
-      console.log("Request query:", JSON.stringify(req.query, null, 2));
-      console.log("Headers:", JSON.stringify(req.headers, null, 2));
-      console.log("===========================");
-
       passport.authenticate(
         "google",
         { session: false },
         (err: any, user: any, info: any) => {
-          console.log("=== PASSPORT AUTHENTICATE RESULT ===");
-          console.log("Error:", err);
-          console.log("User:", user);
-          console.log("Info:", info);
-          console.log("===================================");
-
           if (err) {
-            console.error("Passport authentication error:", err);
             const frontendUrl =
               process.env.CLIENT_URL || "http://localhost:5173";
             return res.redirect(
@@ -369,7 +328,6 @@ if (isOAuthEnabled) {
           }
 
           if (!user) {
-            console.error("No user returned from passport");
             const frontendUrl =
               process.env.CLIENT_URL || "http://localhost:5173";
             return res.redirect(
@@ -387,8 +345,6 @@ if (isOAuthEnabled) {
     async (req: any, res): Promise<any> => {
       try {
         const user = req.user;
-        console.log("=== JWT TOKEN CREATION ===");
-        console.log("User for JWT:", { id: user._id, email: user.email });
 
         if (!process.env.JWT_SECRET) {
           throw new Error("JWT_SECRET is not defined in environment variables");
@@ -400,24 +356,10 @@ if (isOAuthEnabled) {
           { expiresIn: "7d" }
         );
 
-        console.log("JWT token created successfully");
-        console.log("=========================");
-
         // Redirect to frontend with token
         const frontendUrl = process.env.CLIENT_URL || "http://localhost:5173";
-        console.log(
-          "Redirecting to:",
-          `${frontendUrl}/auth/callback?token=${token.substring(0, 20)}...`
-        );
         res.redirect(`${frontendUrl}/auth/callback?token=${token}`);
       } catch (error: unknown) {
-        console.error("=== OAUTH CALLBACK ERROR ===");
-        if (error instanceof Error) {
-          console.error("Error message:", error.message);
-          console.error("Error stack:", error.stack);
-        }
-        console.error("===========================");
-
         const frontendUrl = process.env.CLIENT_URL || "http://localhost:5173";
         res.redirect(
           `${frontendUrl}/login?error=${encodeURIComponent(

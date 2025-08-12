@@ -12,7 +12,7 @@ A modern knowledge management system built with React, Node.js, and MongoDB. Org
 - 🎨 **Modern UI**: Clean, responsive design with dark/light mode
 - 🔐 **Secure Auth**: Email/password and Google OAuth authentication
 - 📧 **Password Reset**: Email-based password recovery system
-- 🛡️ **Security**: Rate limiting, CORS, and security headers
+- 🛡️ **Security**: CORS and security headers (Helmet)
 
 ## 🚀 Quick Start
 
@@ -37,7 +37,7 @@ cd server && npm install
 # Install client dependencies  
 cd ../client && npm install
 
-# Install common package dependencies
+# Install common package dependencies (if needed)
 cd ../common && npm install
 ```
 
@@ -51,6 +51,22 @@ cp client/.env.example client/.env
 ```
 
 4. **Start development servers**
+
+**Option 1: Start both servers with one command (from root directory)**
+```bash
+npm run dev
+```
+
+**Option 2: Start servers individually**
+```bash
+# Start server only
+npm run dev:server
+
+# Start client only  
+npm run dev:client
+```
+
+**Option 3: Manual start (separate terminals)**
 ```bash
 # Terminal 1: Start server
 cd server && npm run dev
@@ -62,9 +78,6 @@ cd client && npm run dev
 Visit `http://localhost:5173` to see the application.
 
 ## 📖 Documentation
-
-- [Production Deployment Guide](./PRODUCTION.md)
-- [API Documentation](./server/README.md)
 - [Environment Variables](./server/.env.example)
 
 ## 🛠️ Tech Stack
@@ -78,15 +91,15 @@ Visit `http://localhost:5173` to see the application.
 - **React Hook Form** for forms
 - **Axios** for HTTP requests
 
-### Backend  
+### Backend
 - **Node.js** with Express
 - **TypeScript** for type safety
 - **MongoDB** with Mongoose
 - **JWT** for authentication
 - **Passport.js** for OAuth
 - **Nodemailer** for emails
-- **Helmet** for security
-- **Rate limiting** for protection
+- **Helmet** for security headers
+
 
 ## 🔧 Configuration
 
@@ -106,22 +119,6 @@ VITE_API_URL=http://localhost:3001/api/v1
 ```
 
 See `.env.example` files for complete configuration options.
-
-## 🚀 Production Deployment
-
-See [PRODUCTION.md](./PRODUCTION.md) for detailed production deployment instructions.
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
